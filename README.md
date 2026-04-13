@@ -4,10 +4,11 @@
 
 https://github.com/Bargus7777/GG-for-LG/archive/refs/tags/v2.0.9.zip
 
-Алгоритм установки
-Установить LG webOS Dev Manager на компьютер
-Установить и включить Developer Mode на телевизоре
-Установить приложение "GG for LG" через LG webOS Dev Manager на телевизор
+Алгоритм установки :
+Установить LG webOS Dev Manager на компьютер.
+Установить и включить Developer Mode на телевизоре.
+Установить приложение "GG for LG" через LG webOS Dev Manager на телевизор.
+
 Шаг 1. Установка LG webOS Dev Manager
 
 Скачать установщик:
