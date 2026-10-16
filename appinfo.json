@@ -1,0 +1,15 @@
+{
+  "id": "com.alex.ggforlg",
+  "version": "2.1.6",
+  "vendor": "OpenAI",
+  "type": "web",
+  "main": "index.html",
+  "title": "GG for LG",
+  "icon": "icon.png",
+  "largeIcon": "icon.png",
+  "requiredMemory": 96,
+  "supportsAudioGuidance": false,
+  "disableBackHistoryAPI": true,
+  "transparent": false,
+  "bgColor": "#0a2c68"
+}
