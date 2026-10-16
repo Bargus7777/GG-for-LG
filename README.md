@@ -13,6 +13,8 @@
 
 ## Установка
 
+[Старая инструкция по установке](https://github.com/Bargus7777/GG-for-LG/blob/v2.1.6/README.md) — сохранена для справки; IPK скачивайте из последнего релиза ниже.
+
 1. Скачайте IPK из [последнего релиза](https://github.com/Bargus7777/GG-for-LG/releases/latest).
 2. На телевизоре установите приложение **Developer Mode** и включите **Dev Mode Status** и **Key Server**. Компьютер и телевизор должны быть в одной сети.
 3. Установите IPK через [webOS Dev Manager](https://github.com/webosbrew/dev-manager-desktop/releases) либо через [webOS CLI](https://www.npmjs.com/package/@webos-tools/cli):
