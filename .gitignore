@@ -1,0 +1,8 @@
+# Build output: publish installable IPK as a GitHub Release asset.
+*.ipk
+output/
+
+# Local-only agent notes and diagnostics.
+AGENTS.md
+tmp_*
+*.log

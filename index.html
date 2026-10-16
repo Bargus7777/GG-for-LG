@@ -1,0 +1,2690 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GG for LG</title>
+<style>
+  :root{
+    --bg:#0b2f66; --bg2:#1f4e9b; --panel:rgba(10,24,56,.94); --line:rgba(255,255,255,.12);
+    --text:#f5f8ff; --muted:#b9c7e5; --accent:#35a6ff; --danger:#ff4d4f;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;width:100%;height:100%;background:var(--bg);color:var(--text);font-family:"Segoe UI",Arial,sans-serif;overflow:hidden;cursor:default;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+  body{background:
+      linear-gradient(135deg,#103774 0%, #2b63b8 45%, #18468f 100%);
+  }
+  #app{position:fixed;inset:0;isolation:isolate}
+
+  /* Отключение ресурсоемких анимаций для стабильного FPS на ТВ */
+  body::before, body::after, #app::before, #app::after{display:none !important;}
+
+  .hidden{display:none !important}
+  #splash{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;
+    background: linear-gradient(135deg,#103774 0%, #2b63b8 45%, #18468f 100%);
+  }
+  #splash::before{display:none;}
+  #logoBox{position:relative;display:flex;flex-direction:column;align-items:center;gap:18px;padding:24px 28px;border-radius:32px;
+    background:rgba(5,18,48,.18);box-shadow:0 20px 60px rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.10)}
+  #appLogoSplash{width:min(62vw,1080px);max-width:1080px;height:auto;max-height:58vh;object-fit:contain;border-radius:30px;filter:drop-shadow(0 18px 36px rgba(0,0,0,.32));transform:translateY(-10px)}
+  #gg{font-size:48px;font-weight:800;letter-spacing:1.2px;line-height:1;text-shadow:0 12px 30px rgba(0,0,0,.28)}
+  #sub{font-size:18px;letter-spacing:2px;text-transform:none;color:rgba(226,240,255,.85)}
+  #version{margin-top:4px;font-size:24px;font-weight:600;padding:10px 16px;border-radius:999px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.14)}
+
+  #browser,#player{position:absolute;inset:0;z-index:1}
+  #browserTop{
+    position:absolute;left:0;top:0;right:0;height:var(--browser-top-height,166px);padding:20px 30px 0 30px;z-index:3;
+    display:flex;align-items:flex-start;justify-content:space-between;gap:20px;overflow:visible;
+    background:linear-gradient(180deg, rgba(3,10,24,.78), rgba(3,10,24,0));
+    contain: layout style;
+  }
+  #brandTitle{font-size:52px;font-weight:900;letter-spacing:.4px;white-space:nowrap;padding:10px 20px;border-radius:18px;background:linear-gradient(180deg, rgba(6,18,46,.98), rgba(10,38,96,.93));border:1px solid rgba(140,197,255,.40);box-shadow:0 10px 24px rgba(0,0,0,.24);text-shadow:0 2px 10px rgba(0,0,0,.24)}
+  .tab#brandSub{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:44px;
+    padding:0 18px;
+    border-radius:999px;
+    background:var(--panel);
+    border:2px solid rgba(255,255,255,.24);
+    font-size:20px;
+    font-weight:700;
+    white-space:nowrap;
+  }
+  #rightControls{display:flex;flex-direction:column;align-items:stretch;gap:8px;width:400px;min-width:400px;margin-left:auto;overflow:visible}
+  #pageButtons{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:100%}
+  .pageBtn{
+    display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;
+    width:100%;min-width:0;height:46px;padding:0 12px;border-radius:999px;
+    margin-top:8px;
+    background:var(--panel);border:2px solid rgba(255,255,255,.24);
+    color:rgba(230,239,255,.96);font-size:20px;font-weight:700;letter-spacing:.1px;
+    text-align:center;white-space:nowrap;line-height:1;overflow:hidden;text-overflow:ellipsis;
+    box-shadow:0 10px 24px rgba(0,0,0,.18);
+  }
+  .aboutBtn{align-self:stretch;}
+
+  .topControl.focused{
+    background:linear-gradient(180deg, rgba(53,166,255,.38), rgba(53,166,255,.22));
+    border-color:rgba(220,244,255,1);
+    color:#fff;
+    transform:translateY(-1px);
+    box-shadow:0 8px 20px rgba(0,0,0,.20);
+    will-change: transform;
+  }
+
+  #topLeft{display:flex;flex-direction:column;gap:10px;min-width:0;flex:1;overflow:visible}
+  #topRow{display:flex;align-items:center;gap:16px;flex-wrap:nowrap;min-width:0;overflow:visible}
+  #tabsBar{display:flex;gap:12px;align-items:center;justify-content:center}
+  .tab{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    height:44px;
+    padding:0 18px;
+    border-radius:999px;
+    background:var(--panel);
+    border:2px solid rgba(255,255,255,.24);
+    font-size:20px;
+    font-weight:700;
+    white-space:nowrap;
+  }
+  .tab.active{
+    background:linear-gradient(180deg, rgba(53,166,255,.28), rgba(53,166,255,.14));
+    border-color:rgba(175,226,255,.76);
+    color:#ffffff;
+    box-shadow:0 10px 24px rgba(0,0,0,.18)
+  }
+  .tab.active.focused{
+    background:linear-gradient(180deg, rgba(53,166,255,.40), rgba(53,166,255,.24));
+    border-color:rgba(210,239,255,.98);
+    box-shadow:0 12px 28px rgba(0,0,0,.24)
+  }
+  .tab.focused,.pageBtn.focused,#brandSub.focused{
+    background:linear-gradient(180deg, rgba(53,166,255,.34), rgba(53,166,255,.20));
+    border-color:rgba(210,239,255,.98);
+    color:#fff;
+    transform:translateY(-1px) scale(1.02);
+    box-shadow:0 8px 20px rgba(0,0,0,.20);
+    will-change: transform;
+  }
+
+  #gridWrap{position:absolute;inset:172px 0 0 0;padding:0;overflow:hidden;contain: strict;scroll-behavior: smooth;}
+  #gridWrap::-webkit-scrollbar{display:none}
+  #gridSpacer{position:relative;width:100%;height:100%;padding:var(--grid-margin-top,24px) var(--grid-margin-x,24px) var(--grid-margin-bottom,12px) var(--grid-margin-x,24px);display:flex;justify-content:center;align-items:flex-start;overflow:visible}
+  #grid{
+    --cols:4;
+    --grid-gap:18px;
+    --tile-width:420px;
+    --tile-height:236px;
+    --grid-margin-x:18px;
+    --grid-margin-top:24px;
+    --grid-margin-bottom:12px;
+    position:relative;
+    display:grid;
+    grid-template-columns:repeat(var(--cols), var(--tile-width));
+    grid-auto-rows:var(--tile-height);
+    gap:var(--grid-gap);
+    align-content:start;
+    justify-content:start;
+    width:calc(var(--cols) * var(--tile-width) + (var(--cols) - 1) * var(--grid-gap));
+    margin:0;
+    contain: layout style;
+  }
+  .card{
+    position:relative;border-radius:var(--card-radius, 24px);overflow:hidden;background:#0b1632;
+    border:var(--card-border, 3px) solid rgba(255,255,255,.26);box-shadow:0 10px rgba(255,255,255,.10);
+    transform:scale(1);transition:transform .20s ease-out, border-color .15s ease, box-shadow .20s ease, opacity .15s ease;
+    transform-origin:center center;
+    contain: layout style paint;
+    will-change: transform;
+  }
+  /* Упрощена анимация и тени карточки при фокусе для ТВ */
+  .card.focused{
+    transform:scale(1.04);border-color:rgba(214,240,255,1);
+    box-shadow:0 12px 28px rgba(0,0,0,.32);
+    z-index:2;
+  }
+  .card.empty{opacity:.001;pointer-events:none}
+  .card img{width:100%;height:100%;object-fit:cover;display:block;background:#16213f;contain: strict;}
+  .card img.pending{opacity:0}
+  .card img.ready{opacity:1;transition:opacity .15s ease}
+  .thumbPlaceholder{position:absolute;inset:0;background:linear-gradient(180deg,#12234a,#0c1837)}
+  .thumbPlaceholder::after{content:"";position:absolute;left:16px;right:16px;bottom:16px;height:5px;border-radius:999px;background:rgba(255,255,255,.08)}
+  .cardShade{position:absolute;inset:0;background:linear-gradient(180deg, rgba(3,8,20,.12) 18%, rgba(3,8,20,.35) 56%, rgba(3,8,20,.88) 100%)}
+  .status{position:absolute;left:var(--status-inset,14px);top:var(--status-inset,14px);display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:rgba(0,0,0,.56);font-size:var(--status-font,18px);font-weight:700;z-index:3}
+  .status .dot{width:10px;height:10px;border-radius:999px;background:var(--danger);box-shadow:0 0 10px rgba(255,77,79,.8)}
+  .viewers{position:absolute;right:var(--status-inset,14px);top:var(--status-inset,14px);padding:8px 12px;border-radius:999px;background:rgba(0,0,0,.56);font-size:var(--status-font,18px);font-weight:600}
+  .meta{position:absolute;left:var(--meta-inset,16px);right:var(--meta-inset,16px);bottom:var(--meta-inset,14px)}
+  .channel{font-size:var(--meta-channel-font,28px);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .title{margin-top:6px;font-size:var(--meta-title-font,20px);line-height:1.3;color:#e5eeff;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow:hidden;min-height:calc(var(--meta-title-font,20px) * 2.6)}
+  .game{margin-top:8px;font-size:var(--meta-game-font,17px);color:#9fb4df;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card.games-card{
+    background:linear-gradient(180deg, rgba(8,18,40,.98), rgba(11,28,62,.96) 58%, rgba(8,20,46,.98));
+    border-color:rgba(155,205,255,.18);
+    display:flex;align-items:stretch;justify-content:stretch;
+  }
+  .card.games-card img,
+  .card.games-card .thumbPlaceholder{display:none !important}
+  .card.games-card .cardShade{
+    background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0) 28%,
+      linear-gradient(180deg, rgba(4,10,22,.20), rgba(4,10,22,.34) 60%, rgba(4,10,22,.50) 100%));
+  }
+  .card.games-card .status{display:none}
+  .card.games-card .viewers{
+    left:auto;right:14px;top:14px;bottom:auto;
+    padding:8px 12px;
+    font-size:18px;font-weight:800;
+    color:#dff2ff;
+    background:rgba(0,0,0,.38);
+    border:1px solid rgba(255,255,255,.08);
+  }
+  .card.games-card .meta{
+    position:absolute;
+    inset:0;
+    left:16px;right:16px;top:16px;bottom:16px;
+  }
+  .card.games-card .channel{
+    position:absolute;
+    left:12px;right:12px;top:50%;
+    transform:translateY(-50%);
+    display:flex;align-items:center;justify-content:center;
+    text-align:center;
+    font-family:"Segoe UI",Arial,sans-serif;
+    font-size:38px;font-weight:900;
+    line-height:1.04;
+    white-space:normal;overflow:visible;text-overflow:clip;
+    text-transform:none;
+    letter-spacing:.35px;
+    color:#f8fbff;
+    text-shadow:0 2px 8px rgba(0,0,0,.46);
+    padding:0 10px;
+    word-break:normal;
+    overflow-wrap:normal;
+    hyphens:none;
+  }
+  .card.games-card .title{
+    position:absolute;
+    left:0;
+    bottom:0;
+    min-height:auto;
+    margin:0;
+    font-size:20px;font-weight:800;
+    color:#d7e5ff;
+    line-height:1.2;
+    text-shadow:0 2px 8px rgba(0,0,0,.34);
+  }
+  .card.games-card .game{display:none}
+  #browserMessage{
+    position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    min-width:620px;max-width:78vw;padding:26px 30px;border-radius:24px;background:rgba(6,16,38,.88);
+    border:1px solid var(--line);box-shadow:0 18px 50px rgba(0,0,0,.35);display:none;z-index:5;text-align:center;
+  }
+  #browserMessageTitle{font-size:32px;font-weight:800}
+  #browserMessageText{margin-top:12px;font-size:22px;line-height:1.45;color:#d7e3ff}
+  #pager{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;font-size:18px;color:var(--muted);z-index:3}
+  #pager > div{padding:8px 14px;border-radius:999px;background:var(--panel);border:2px solid rgba(255,255,255,.24);color:rgba(230,239,255,.92);font-weight:700;white-space:nowrap}
+  #pageInfo{text-align:left}
+  #streamsCount{text-align:left}
+
+  #player{background:#000}
+  #player video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000}
+  .overlay{
+    position:absolute;left:32px;top:28px;z-index:15;background:rgba(0,0,0,.55);
+    padding:10px 16px;border-radius:14px;font-size:28px;display:none;
+    min-height:56px
+  }
+  .overlayTitleText{max-width:980px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700}
+  .favoriteChip{margin-left:18px;padding:8px 14px;border-radius:999px;border:2px solid rgba(255,255,255,.30);font-size:24px;font-weight:800;white-space:nowrap;display:inline-flex;align-items:center;gap:8px;cursor:pointer;pointer-events:auto;user-select:none}
+  .favoriteChip.focused{background:linear-gradient(180deg, rgba(53,166,255,.34), rgba(53,166,255,.20));border-color:rgba(210,239,255,.98);box-shadow:0 4px rgba(53,166,255,.20)}
+  .statusFavorite{display:inline-flex;align-items:center;justify-content:center;min-width:20px;font-size:1.05em;font-weight:900;line-height:1;margin-left:4px}
+  .statusFavorite.active{color:#ffd84a;text-shadow:0 0 14px rgba(255,216,74,.58)}
+  .statusFavorite.inactive{color:rgba(255,255,255,.24)}
+  .card.offline{filter:grayscale(1) brightness(.82)}
+  .card.offline .status .dot{background:#8b96aa;box-shadow:none}
+  .card.offline .status{color:#d9deeb}
+  #titleBadge{top:28px}
+  #liveBadge{top:104px}
+  #resBadge{top:28px}
+  #viewerBadge{top:104px}
+  .overlay.visible{display:flex;align-items:center}
+  #liveBadge .dot{color:#ff3b30;font-size:26px;vertical-align:middle;margin-right:8px}
+  #liveBadge .live{color:#ff3b30;font-weight:700;margin-right:10px}
+  #channelLogo{
+    width:48px;height:48px;border-radius:999px;object-fit:cover;margin-right:12px;
+    background:rgba(255,255,255,.10);border:2px solid rgba(255,255,255,.22);display:none;flex:0 0 auto;
+  }
+  #channelLogo.visible{display:block}
+  #viewerBadge{position:absolute;left:auto;top:104px;right:32px}
+  #restoreBadge{left:50%;right:auto;top:auto;bottom:44px;transform:translateX(-50%);max-width:86vw;background:rgba(0,0,0,.74);border:1px solid rgba(255,255,255,.28);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  #aboutOverlay{
+    position:absolute;inset:0;display:none;align-items:center;justify-content:center;z-index:110;
+    background:rgba(0,0,0,.42);
+  }
+  #aboutOverlay.visible{display:flex}
+  #aboutCard{
+    width:640px;height:640px;border-radius:34px;
+    background:linear-gradient(180deg, rgba(8,20,46,.96), rgba(10,24,56,.94));
+    border:2px solid rgba(185,225,255,.62);
+    box-shadow:0 24px 60px rgba(0,0,0,.44);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    padding:34px 36px;
+  }
+  #aboutLogo{width:270px;height:270px;object-fit:cover;background:#071a56;border:3px solid rgba(170,225,255,.72);box-shadow:0 14px 28px rgba(0,0,0,.34);border-radius:34px;filter:none;margin-top:10px;margin-bottom:18px}
+  #aboutTitle{font-size:32px;font-weight:800;line-height:1.15;margin-top:4px}
+  #aboutName{font-size:48px;font-weight:900;line-height:1.1;margin-top:10px;letter-spacing:.6px}
+  #aboutVersion{font-size:28px;font-weight:700;color:#d5e6ff;line-height:1.2;margin-top:14px}
+  #aboutDesc{font-size:24px;line-height:1.5;color:#d8e4fa;margin-top:22px;max-width:460px}
+  #logFromAbout{margin-top:26px;padding:14px 30px;border-radius:16px;border:2px solid rgba(185,225,255,.55);background:rgba(53,166,255,.16);font-size:24px;font-weight:700;cursor:pointer}
+  #error{position:absolute;inset:auto 40px 40px 40px;z-index:30;background:rgba(128,0,0,.72);padding:16px 18px;border-radius:14px;font-size:24px;display:none;white-space:pre-wrap}
+  #logOverlay{position:absolute;inset:0;background:rgba(2,6,16,.92);display:none;z-index:130;padding:40px 48px;flex-direction:column}
+  #logOverlay.visible{display:flex}
+  #logTitle{font-size:30px;font-weight:800;margin-bottom:18px;color:#d5e6ff}
+  #logList{flex:1;overflow:hidden;font-family:Consolas,monospace;font-size:21px;line-height:1.45;color:#e8f1ff;white-space:pre-wrap;word-break:break-word}
+  #logHint{font-size:21px;opacity:.8;margin-top:14px}
+  #exitDialog{position:absolute;inset:0;background:rgba(0,0,0,.55);display:none;z-index:120;align-items:center;justify-content:center}
+  #exitCard{
+    background:linear-gradient(180deg, rgba(12,24,54,.96), rgba(9,17,38,.96));
+    border:2px solid rgba(255,255,255,.24);border-radius:22px;padding:30px 34px;min-width:620px;box-shadow:0 18px 50px rgba(0,0,0,.45);
+    text-align:center;
+  }
+  #exitTitle{font-size:32px;margin-bottom:14px;font-weight:700}
+  #exitHint{font-size:23px;line-height:1.4;opacity:.94}
+  #streamExitDialog{position:absolute;inset:0;background:rgba(0,0,0,.38);display:none;z-index:121;align-items:center;justify-content:center}
+  #streamExitCard{background:linear-gradient(180deg, rgba(12,24,54,.96), rgba(9,17,38,.96));border:2px solid rgba(185,225,255,.42);border-radius:22px;padding:28px 34px;min-width:620px;box-shadow:0 18px 50px rgba(0,0,0,.45);text-align:center}
+  #streamExitTitle{font-size:32px;margin-bottom:14px;font-weight:700}
+  #streamExitHint{font-size:23px;line-height:1.4;opacity:.94}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="splash"><div id="logoBox"><img id="appLogoSplash" src="splash.png" alt="GG for LG splash"><div id="version">GoodGame for LG <script>document.write(APP_VERSION);</script></div></div></div>
+
+  <section id="browser" class="hidden">
+    <div id="browserTop">
+      <div id="topLeft">
+        <div id="topRow">
+          <div id="brandTitle">GoodGame.ru</div>
+          <div id="tabsBar">
+            <div class="tab active topControl" data-topindex="0" data-tab="streams">Все стримы</div>
+            <div class="tab topControl" data-topindex="1" data-tab="games">Игры</div>
+            <div class="tab topControl" data-topindex="2" data-tab="random">Случайный стрим</div>
+            <div class="tab topControl" data-topindex="3" data-tab="favorites">Избранные</div>
+            <div id="brandSub" class="tab topControl aboutBtn" data-topindex="4" data-action="about">О программе</div>
+          </div>
+        </div>
+      </div>
+      <div id="rightControls">
+        <div id="pageButtons">
+          <div id="firstPageBtn" class="pageBtn topControl" data-topindex="5" data-action="first">В начало</div>
+          <div id="prevPageBtn" class="pageBtn topControl" data-topindex="6" data-action="prev">Предыдущая</div>
+          <div id="nextPageBtn" class="pageBtn topControl" data-topindex="7" data-action="next">Следующая</div>
+        </div>
+        <div id="pager"><div id="pageInfo">Страница 1 / 1</div><div id="streamsCount" style="text-align:left">Стримов: --</div></div>
+      </div>
+    </div>
+    <div id="gridWrap"><div id="gridSpacer"><div id="grid"></div></div></div>
+    <div id="browserMessage"><div id="browserMessageTitle"></div><div id="browserMessageText"></div></div>
+  </section>
+
+  <section id="player" class="hidden">
+    <video id="video" autoplay playsinline></video>
+    <div id="titleBadge" class="overlay"><img id="channelLogo" alt=""><span id="titleText" class="overlayTitleText">Название стрима</span><span id="favoriteChip" class="favoriteChip focused">☆ В избранное</span></div>
+    <div id="liveBadge" class="overlay"><span class="dot">●</span><span class="live">LIVE</span><span id="liveText">--:--:--</span></div>
+    <div id="viewerBadge" class="overlay"><span id="viewerText">0 зр.</span></div>
+    <div id="restoreBadge" class="overlay"><span id="restoreText">Восстановление потока…</span></div>
+    <div id="resBadge" class="overlay"><span id="resText">--×--</span></div>
+    <div id="error"></div>
+  </section>
+
+
+  <div id="aboutOverlay">
+    <div id="aboutCard">
+      <img id="aboutLogo" src="about.png" alt="GG for LG logo">
+      <div id="aboutTitle">О программе</div>
+      <div id="aboutName">GG for LG</div>
+      <div id="aboutVersion">Версия <script>document.write(APP_VERSION);</script></div>
+      <div id="aboutDesc">Неофициальный клиент<br>Goodgame for WebOS</div>
+      <div id="logFromAbout">Открыть журнал событий</div>
+    </div>
+  </div>
+
+  <div id="logOverlay">
+    <div id="logTitle">Журнал критических событий</div>
+    <div id="logList"></div>
+    <div id="logHint">Клавиша «0» — открыть/закрыть журнал · хранятся последние 60 событий</div>
+  </div>
+
+  <div id="exitDialog"><div id="exitCard"><div id="exitTitle">Выйти из приложения?</div><div id="exitHint">Нажмите кнопку "Назад" ещё раз для выхода</div></div></div>
+  <div id="streamExitDialog"><div id="streamExitCard"><div id="streamExitTitle">Выйти из стрима?</div><div id="streamExitHint">Нажмите кнопку "Назад" ещё раз для выхода</div></div></div>
+</div>
+
+<script src="hls.min.js"></script>
+<script>
+(function(){
+  const APP_VERSION = '2.2.3';
+  try { console.log('GG: app v' + APP_VERSION, 'visState=' + document.visibilityState, 'hidden=' + document.hidden); } catch (e) {}
+
+  // === Журнал критических событий (кольцевой буфер, хранится на ТВ) ===
+  const CRITICAL_LOG_KEY = 'gg_critical_log_v1';
+  const CRITICAL_LOG_MAX = 60;
+  const CRITICAL_LOG_REPEAT_MS = 60000;
+  let criticalLog = [];
+  function loadCriticalLog(){
+    try { const raw = localStorage.getItem(CRITICAL_LOG_KEY); if (raw) { const arr = JSON.parse(raw); if (Array.isArray(arr)) criticalLog = arr.slice(-CRITICAL_LOG_MAX); } } catch (e) {}
+  }
+  function persistCriticalLog(){
+    try { localStorage.setItem(CRITICAL_LOG_KEY, JSON.stringify(criticalLog)); } catch (e) {}
+  }
+  function logCritical(msg){
+    try {
+      const now = Date.now();
+      const text = String(msg).slice(0, 300);
+      const last = criticalLog[criticalLog.length - 1];
+      if (last && last.msg === text && now - last.ts < CRITICAL_LOG_REPEAT_MS) {
+        last.count = (last.count || 1) + 1; last.ts = now;
+      } else {
+        criticalLog.push({ ts: now, msg: text, count: 1 });
+        while (criticalLog.length > CRITICAL_LOG_MAX) criticalLog.shift();
+      }
+      persistCriticalLog();
+    } catch (e) {}
+    try { console.log('GG! ' + msg); } catch (e) {}
+  }
+  function fmtLogTime(ts){
+    const d = new Date(ts); const p = (n) => String(n).padStart(2, '0');
+    return `${p(d.getDate())}.${p(d.getMonth()+1)} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+  }
+  function renderLogOverlay(){
+    const list = document.getElementById('logList');
+    if (!list) return;
+    if (!criticalLog.length) { list.textContent = 'Пока пусто — критических событий не было.'; return; }
+    list.innerHTML = criticalLog.slice().reverse()
+      .map((en) => sanitize(`${fmtLogTime(en.ts)}${en.count > 1 ? ' ×' + en.count : ''} — ${en.msg}`))
+      .join('\n');
+  }
+  function logOverlayIsOpen(){ const o = document.getElementById('logOverlay'); return !!(o && o.classList.contains('visible')); }
+  function openLogOverlay(){ renderLogOverlay(); const o = document.getElementById('logOverlay'); if (o) o.classList.add('visible'); }
+  function closeLogOverlay(){ const o = document.getElementById('logOverlay'); if (o) o.classList.remove('visible'); }
+  loadCriticalLog();
+  logCritical('Запуск приложения v' + APP_VERSION);
+  const SPLASH_MS = 3000;
+  const STREAMS_BG_REFRESH_MS = 90000;
+  const STREAMS_STALE_MS = 60000;
+  const API_ONPAGE = 60;
+  const API_MAX_PAGES = 10;
+  const STALL_CHECK_INTERVAL_MS = 3000;
+  const STALL_THRESHOLD = 3;
+  const MAX_AUTO_RECOVERY = 4;
+  const OVERLAY_MS = 7000;
+  const ABOUT_GLOW_MS = 5000;
+  let aboutGlowTimer = null;
+  let aboutOverlayTimer = null;
+  let hlsPlayer = null;
+  let playbackAttemptToken = 0;
+  let stallCheckTimer = null;
+  let lastPlaybackTime = 0;
+  let stallCounter = 0;
+  let recoveryAttempts = 0;
+  let recoveryBusy = false;
+  let appHiddenFlag = false;
+  let wasPlayingBeforeHide = false;
+  let resumePending = false;
+  let playbackStarted = false;
+  const GRID_COLS = 4;
+  const GRID_ROWS = 3;
+  const TILE_ASPECT = 16 / 9;
+  const PAGE_SIZE = GRID_COLS * GRID_ROWS;
+
+  const splash = document.getElementById('splash');
+  const browser = document.getElementById('browser');
+  const player = document.getElementById('player');
+  const grid = document.getElementById('grid');
+  const pager = document.getElementById('pager');
+  const browserMessage = document.getElementById('browserMessage');
+  const browserMessageTitle = document.getElementById('browserMessageTitle');
+  const browserMessageText = document.getElementById('browserMessageText');
+  const video = document.getElementById('video');
+  const errorBox = document.getElementById('error');
+  const titleBadge = document.getElementById('titleBadge');
+  const liveBadge = document.getElementById('liveBadge');
+  const resBadge = document.getElementById('resBadge');
+  const viewerBadge = document.getElementById('viewerBadge');
+  const titleText = document.getElementById('titleText');
+  const liveText = document.getElementById('liveText');
+  const resText = document.getElementById('resText');
+  const viewerText = document.getElementById('viewerText');
+  const restoreBadge = document.getElementById('restoreBadge');
+  const restoreText = document.getElementById('restoreText');
+  const channelLogo = document.getElementById('channelLogo');
+  const exitDialog = document.getElementById('exitDialog');
+  const streamExitDialog = document.getElementById('streamExitDialog');
+  const aboutOverlay = document.getElementById('aboutOverlay');
+  const tabs = Array.from(document.querySelectorAll('.tab'));
+  const topControls = Array.from(document.querySelectorAll('.topControl'));
+  const brandSub = document.getElementById('brandSub');
+  const streamsCount = document.getElementById('streamsCount');
+  const pageInfo = document.getElementById('pageInfo');
+  const gridWrap = document.getElementById('gridWrap');
+  const gridSpacer = document.getElementById('gridSpacer');
+
+  const favoriteChip = document.getElementById('favoriteChip');
+  const FAVORITES_KEY = 'gg_favorites_v212';
+
+  function px(value){ return `${Math.max(0, Math.round(value))}px`; }
+
+  function applyAdaptiveGrid(){
+    if (!grid || !gridWrap) return;
+    const wrapWidth = Math.max(1280, gridWrap.clientWidth || window.innerWidth || 1920);
+    const wrapHeight = Math.max(720, gridWrap.clientHeight || Math.max(0, window.innerHeight - 172) || 720);
+    const focusScale = 1.055;
+
+    let gap = Math.max(12, Math.round(Math.min(wrapWidth, wrapHeight) * 0.018));
+    let side = gap;
+    let top = Math.max(10, Math.round(gap * 0.9));
+    let bottom = Math.max(8, Math.round(gap * 0.55));
+
+    let byWidth = (wrapWidth - side * 2 - gap * (GRID_COLS - 1)) / GRID_COLS;
+    const byHeight = (wrapHeight - top - bottom - gap * (GRID_ROWS - 1)) / GRID_ROWS;
+
+    let tileWidth = Math.floor(Math.min(byWidth, byHeight * TILE_ASPECT));
+    let tileHeight = Math.round(tileWidth / TILE_ASPECT);
+
+    const focusReserve = Math.max(10, Math.ceil(tileWidth * (focusScale - 1) / 2) + Math.ceil(gap * 0.2));
+    side = gap + focusReserve;
+    byWidth = (wrapWidth - side * 2 - gap * (GRID_COLS - 1)) / GRID_COLS;
+    tileWidth = Math.floor(Math.min(byWidth, byHeight * TILE_ASPECT));
+    tileHeight = Math.round(tileWidth / TILE_ASPECT);
+
+    if ((tileHeight * GRID_ROWS + gap * (GRID_ROWS - 1) + top + bottom) > wrapHeight) {
+      tileHeight = Math.floor((wrapHeight - top - bottom - gap * (GRID_ROWS - 1)) / GRID_ROWS);
+      tileWidth = Math.round(tileHeight * TILE_ASPECT);
+    }
+
+    const safeSide = Math.max(gap + Math.max(10, Math.ceil(tileWidth * (focusScale - 1) / 2) + Math.ceil(gap * 0.2)), gap);
+    const usedWidth = tileWidth * GRID_COLS + gap * (GRID_COLS - 1);
+    const freeWidth = Math.max(0, wrapWidth - usedWidth);
+    side = Math.max(safeSide, Math.floor(freeWidth / 2));
+
+    if ((usedWidth + side * 2) > wrapWidth) side = Math.max(safeSide, Math.floor((wrapWidth - usedWidth) / 2));
+
+    const usedHeight = tileHeight * GRID_ROWS + gap * (GRID_ROWS - 1);
+    const freeHeight = Math.max(0, wrapHeight - usedHeight);
+    top = Math.max(8, Math.floor(freeHeight * 0.42));
+    bottom = Math.max(8, freeHeight - top);
+
+    const scale = tileWidth / 420;
+    grid.style.setProperty('--cols', String(GRID_COLS));
+    grid.style.setProperty('--grid-gap', px(gap));
+    grid.style.setProperty('--tile-width', px(tileWidth));
+    grid.style.setProperty('--tile-height', px(tileHeight));
+    grid.style.setProperty('--grid-margin-x', px(side));
+    grid.style.setProperty('--grid-margin-top', px(top));
+    grid.style.setProperty('--grid-margin-bottom', px(bottom));
+    grid.style.setProperty('--card-radius', px(Math.max(18, tileWidth * 0.055)));
+    grid.style.setProperty('--card-border', px(Math.max(2, tileWidth * 0.0065)));
+    grid.style.setProperty('--card-shadow-blur', px(Math.max(8, tileWidth * 0.024)));
+
+    document.documentElement.style.setProperty('--status-font', px(Math.max(14, tileWidth * 0.042)));
+    document.documentElement.style.setProperty('--meta-channel-font', px(Math.max(20, tileWidth * 0.067)));
+    document.documentElement.style.setProperty('--meta-title-font', px(Math.max(16, tileWidth * 0.048)));
+    document.documentElement.style.setProperty('--meta-game-font', px(Math.max(14, tileWidth * 0.041)));
+    document.documentElement.style.setProperty('--meta-inset', px(Math.max(12, tileWidth * 0.038)));
+    document.documentElement.style.setProperty('--status-inset', px(Math.max(10, tileWidth * 0.033)));
+    document.documentElement.style.setProperty('--topbar-height', px(Math.max(142, Math.min(188, window.innerHeight * 0.154))));
+
+    if (browser && browser.style) browser.style.setProperty('--browser-top-height', px(Math.max(142, Math.min(188, window.innerHeight * 0.154))));
+    if (gridWrap && gridWrap.style) gridWrap.style.top = 'var(--browser-top-height, 172px)';
+    fitGameCardTitles();
+  }
+
+
+  let mode = 'browser';
+  let activeTab = 'streams';
+  let streams = [];
+  let games = [];
+  let currentItems = [];
+  let totalStreamCount = 0;
+  let totalPagesCount = 1;
+  let focusIndex = 0;
+  let currentStream = null;
+  let streamStartedAtMs = 0;
+  let overlayTimer = null;
+  let streamExitOpen = false;
+  let streamExitTimer = null;
+  let exitOpen = false;
+  let exitTimer = null;
+  let hoverRaf = null;
+  let pendingHoverIndex = -1;
+  let activeImageLoads = 0;
+  const MAX_ACTIVE_IMAGE_LOADS = 16;
+  let deferredImageTimer = null;
+  let renderedPage = -1;
+  let lastHoverIndex = -1;
+  let uiZone = 'grid';
+  let topFocusIndex = 0;
+  let returnToAllStreamsOnBack = false;
+  let browserView = 'all_streams';
+  let selectedGame = null;
+  let lastStreamsFetchAt = 0;
+  let streamsRefreshPromise = null;
+  let backgroundRefreshTimer = null;
+  let audioCtx = null;
+  const ABOUT_OVERLAY_MS = 7000;
+  let favoritesMap = loadFavorites();
+  document.title = `GG for LG ${APP_VERSION}`;
+  const versionEl = document.getElementById('version'); if (versionEl) versionEl.textContent = `GoodGame for LG ${APP_VERSION}`;
+  const aboutVersionEl = document.getElementById('aboutVersion'); if (aboutVersionEl) aboutVersionEl.textContent = `Версия ${APP_VERSION}`;
+
+
+  function loadFavorites(){
+    try {
+      const raw = localStorage.getItem(FAVORITES_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+      const map = new Map();
+      if (Array.isArray(parsed)) {
+        for (const item of parsed) {
+          if (!item || typeof item !== 'object' || !item.key) continue;
+          map.set(String(item.key), item);
+        }
+      }
+      return map;
+    } catch (e) {
+      return new Map();
+    }
+  }
+  function saveFavorites(){
+    try { localStorage.setItem(FAVORITES_KEY, JSON.stringify(Array.from(favoritesMap.values()))); } catch (e) {}
+  }
+  function favoriteKey(stream){
+    return String(streamNickname(stream) || stream?.channelkey || stream?.id || stream?.key || stream?.streamkey || streamIdentity(stream));
+  }
+  function favoriteSnapshot(stream){
+    const key = favoriteKey(stream);
+    const existing = favoritesMap.get(key) || {};
+    return {
+      key,
+      nickname: streamNickname(stream),
+      displayName: streamDisplayName(stream),
+      title: String(stream?.title || stream?.stream_title || existing.title || 'Без названия'),
+      game: String(streamGame(stream) || existing.game || ''),
+      previewUrl: String(streamPreview(stream) || existing.previewUrl || ''),
+      logo: String(streamLogo(stream) || existing.logo || ''),
+      viewers: Number(streamViewerCount(stream) || 0),
+      addedAt: existing.addedAt || Date.now(),
+      offline: false,
+      channelkey: stream?.channelkey || existing.channelkey || '',
+      source: stream
+    };
+  }
+  function isFavorite(stream){ return favoritesMap.has(favoriteKey(stream)); }
+  function addFavorite(stream){
+    if (!stream) return false;
+    const snap = favoriteSnapshot(stream);
+    favoritesMap.set(snap.key, snap);
+    saveFavorites();
+    return true;
+  }
+  function removeFavorite(stream){
+    if (!stream) return false;
+    const removed = favoritesMap.delete(favoriteKey(stream));
+    if (removed) saveFavorites();
+    return removed;
+  }
+  function toggleFavorite(stream){
+    if (!stream) return false;
+    const fav = isFavorite(stream);
+    if (fav) removeFavorite(stream); else addFavorite(stream);
+    refreshFavoritesFromLiveData();
+    updateOverlayFavoriteState();
+    if (mode === 'browser') {
+      if (browserView === 'favorites') {
+        currentItems = getFavoriteItems();
+        totalStreamCount = currentItems.length;
+        if (focusIndex >= currentItems.length) focusIndex = Math.max(0, currentItems.length - 1);
+        renderedPage = -1;
+      }
+      renderGrid(true);
+    }
+    return !fav;
+  }
+  function favoriteToStream(item){
+    const base = item && item.source && typeof item.source === 'object' ? JSON.parse(JSON.stringify(item.source)) : {};
+    base.channelkey = base.channelkey || item.nickname || item.channelkey || item.key;
+    base.streamer = base.streamer || item.displayName || item.nickname || item.channelkey || item.key;
+    base.title = item.title || base.title || base.stream_title || 'Без названия';
+    base.stream_title = base.stream_title || base.title;
+    base.preview = item.previewUrl || base.preview || '';
+    base.logo = item.logo || base.logo || '';
+    base.viewers = Number(item.viewers || 0);
+    base.offline = !!item.offline;
+    base.gameName = item.game || base.gameName || streamGame(base) || '';
+    if (!base.gameobj && item.game) base.gameobj = { title: item.game };
+    return base;
+  }
+  function refreshFavoritesFromLiveData(){
+    const byKey = new Map();
+    for (const s of (streams || [])) byKey.set(favoriteKey(s), s);
+    for (const [key, value] of Array.from(favoritesMap.entries())) {
+      const live = byKey.get(key);
+      if (live) favoritesMap.set(key, favoriteSnapshot(live));
+      else favoritesMap.set(key, { ...value, offline: true, viewers: 0 });
+    }
+    saveFavorites();
+  }
+  function getFavoriteItems(){
+    refreshFavoritesFromLiveData();
+    return Array.from(favoritesMap.values())
+      .sort((a,b) => Number(a.addedAt || 0) - Number(b.addedAt || 0))
+      .map(favoriteToStream);
+  }
+  function updateOverlayFavoriteState(){
+    if (!favoriteChip || !currentStream) return;
+    const active = isFavorite(currentStream);
+    favoriteChip.textContent = active ? '★ В избранном' : '☆ В избранное';
+    favoriteChip.classList.add('focused');
+    favoriteChip.style.color = active ? '#ffd84a' : '#ffffff';
+  }
+  function ensureAudioCtx(){
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return null;
+    if (!audioCtx) audioCtx = new Ctx();
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(()=>{});
+    return audioCtx;
+  }
+  function playUiTone(type){
+    const ctx = ensureAudioCtx();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(type === 'click' ? 1800 : 2400, now);
+    osc1.type = 'sine';
+    osc2.type = 'triangle';
+    if (type === 'click') {
+      osc1.frequency.setValueAtTime(720, now);
+      osc1.frequency.exponentialRampToValueAtTime(540, now + 0.11);
+      osc2.frequency.setValueAtTime(360, now);
+      osc2.frequency.exponentialRampToValueAtTime(270, now + 0.11);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.11, now + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+    } else {
+      osc1.frequency.setValueAtTime(1040, now);
+      osc1.frequency.exponentialRampToValueAtTime(820, now + 0.055);
+      osc2.frequency.setValueAtTime(520, now);
+      osc2.frequency.exponentialRampToValueAtTime(410, now + 0.055);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.06, now + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+    }
+    osc1.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+    osc1.start(now); osc2.start(now);
+    
+    const stopTime = now + (type === 'click' ? 0.15 : 0.09);
+    osc1.stop(stopTime);
+    osc2.stop(stopTime);
+
+    // FIX: Memory leak in AudioContext
+    osc1.onended = () => {
+      osc1.disconnect();
+      osc2.disconnect();
+      filter.disconnect();
+      gain.disconnect();
+    };
+  }
+  function playFocusSound(){ playUiTone('focus'); }
+  function playClickSound(){ playUiTone('click'); }
+
+  function fmt(secs){
+    secs = Math.max(0, secs|0);
+    const h = String(Math.floor(secs/3600)).padStart(2,'0');
+    const m = String(Math.floor((secs%3600)/60)).padStart(2,'0');
+    const s = String(secs%60).padStart(2,'0');
+    return `${h}:${m}:${s}`;
+  }
+  function sanitize(text){
+    return String(text == null ? '' : text).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  }
+  function showMessage(title, text, ms=2500){
+    const skipTitle = title === 'Загрузка';
+    const skipText = /Получаем|Открываем игру|Выбираем случайный/.test(String(text || ''));
+    if (skipTitle || skipText) return;
+    browserMessageTitle.textContent = title;
+    browserMessageText.textContent = text;
+    browserMessage.style.display = 'block';
+    clearTimeout(showMessage._t);
+    if (ms) showMessage._t = setTimeout(() => browserMessage.style.display='none', ms);
+  }
+  function clearMessage(){
+    browserMessage.style.display='none';
+    clearTimeout(showMessage._t);
+  }
+  function showError(msg){ errorBox.textContent = msg; errorBox.style.display='block'; logCritical('Ошибка: ' + msg); }
+  function clearError(){ errorBox.style.display='none'; errorBox.textContent=''; }
+  function hideSplash(){ splash.style.display='none'; }
+  function normalizeImage(url){
+    if (!url) return '';
+    if (/^https?:\/\//i.test(url)) return url;
+    if (url.startsWith('//')) return 'https:' + url;
+    if (url.startsWith('/')) return 'https://goodgame.ru' + url;
+    return url;
+  }
+  function streamNickname(stream){
+    if (!stream || typeof stream !== 'object') return '';
+    const streamer = stream.streamer;
+    if (stream.channelkey) return String(stream.channelkey);
+    if (typeof streamer === 'string' && streamer) return streamer;
+    if (stream.user?.nickname) return String(stream.user.nickname);
+    if (stream.channel?.key) return String(stream.channel.key);
+    if (stream.channel?.name) return String(stream.channel.name);
+    if (stream.channel?.url) return String(stream.channel.url).split('/').filter(Boolean).pop() || '';
+    if (stream.link) return String(stream.link).split('/').filter(Boolean).pop() || '';
+    if (stream.url) return String(stream.url).split('/').filter(Boolean).pop() || '';
+    if (typeof streamer === 'object') return streamer.nickname || streamer.key || streamer.name || '';
+    return '';
+  }
+  function streamDisplayName(stream){
+    const streamer = stream.streamer;
+    if (typeof streamer === 'string' && streamer) return streamer;
+    if (streamer && typeof streamer === 'object') return streamer.nickname || streamer.name || streamer.key || stream.channelkey || 'Unknown';
+    return stream.channelkey || stream.user?.nickname || stream.name || 'Unknown';
+  }
+  function streamIdentity(stream){
+    return [
+      streamNickname(stream),
+      stream?.id || stream?.streamkey || stream?.key || '',
+      stream?.title || stream?.stream_title || stream?.name || ''
+    ].join('|');
+  }
+  function streamGame(stream){
+    if (stream.gameobj?.title) return stream.gameobj.title;
+    if (stream.game?.title) return stream.game.title;
+    if (stream.gameName) return stream.gameName;
+    if (Array.isArray(stream.games) && stream.games.length) return stream.games.map(g => g.title || g).filter(Boolean).join(', ');
+    return '';
+  }
+  function streamViewerCount(stream){
+    const candidates = [
+      stream?.viewers, stream?.online, stream?.stream_viewers, stream?.watching,
+      stream?.channel?.viewers, stream?.channel?.online, stream?.streamer?.viewers
+    ];
+    for (const value of candidates) {
+      const num = Number(value);
+      if (Number.isFinite(num) && num >= 0) return num;
+    }
+    return 0;
+  }
+  function gameCoverCandidate(item){
+    const candidates = [
+      item?.coverUrl, item?.cover, item?.gameCover, item?.game_logo, item?.gameLogo, item?.previewUrl,
+      item?.gameobj?.cover, item?.gameobj?.cover_url, item?.gameobj?.preview, item?.gameobj?.poster, item?.gameobj?.thumb, item?.gameobj?.logo,
+      item?.game?.cover, item?.game?.cover_url, item?.game?.preview, item?.game?.poster, item?.game?.thumb, item?.game?.logo,
+      item?.streams?.[0]?.gameobj?.cover, item?.streams?.[0]?.gameobj?.cover_url, item?.streams?.[0]?.gameobj?.preview, item?.streams?.[0]?.gameobj?.poster, item?.streams?.[0]?.gameobj?.thumb, item?.streams?.[0]?.gameobj?.logo,
+      item?.streams?.[0]?.game?.cover, item?.streams?.[0]?.game?.cover_url, item?.streams?.[0]?.game?.preview, item?.streams?.[0]?.game?.poster, item?.streams?.[0]?.game?.thumb, item?.streams?.[0]?.game?.logo
+    ];
+    for (const candidate of candidates) {
+      const url = normalizeImage(candidate || '');
+      if (url) return url;
+    }
+    return '';
+  }
+  function compactPreviewImage(url){
+    const normalized = normalizeImage(url);
+    if (!normalized || normalized.startsWith('data:')) return normalized;
+    return normalized
+      .replace(/_orig(\.[a-z0-9]+)(\?.*)?$/i, '_240$1$2')
+      .replace(/_(720|1080|1440|2160|480|360|320)(\.[a-z0-9]+)(\?.*)?$/i, '_240$2$3');
+  }
+  function streamPreview(stream){
+    const preview = stream.preview || stream.poster || stream.thumb || stream.img || stream.previewUrl || streamLogo(stream) || '';
+    return compactPreviewImage(preview);
+  }
+  function streamLogo(stream){
+    const candidates = [
+      stream?.streamer?.logo, stream?.streamer?.avatar, stream?.user?.avatar,
+      stream?.channel?.logo, stream?.channel?.avatar, stream?.logo, stream?.avatar
+    ];
+    for (const c of candidates) {
+      const url = normalizeImage(c || '');
+      if (url) return url;
+    }
+    return '';
+  }
+  function svgPlaceholder(label){
+    const safe = String(label || 'GG').slice(0, 28).replace(/[&<>"]/g, '');
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0b2b6a"/><stop offset="100%" stop-color="#123f93"/></linearGradient></defs>
+      <rect width="640" height="360" fill="url(#g)"/><circle cx="110" cy="110" r="26" fill="#ff4d4f"/>
+      <text x="46" y="220" fill="#ffffff" font-family="Arial, sans-serif" font-size="44" font-weight="700">${safe}</text>
+      <text x="46" y="270" fill="#cfe1ff" font-family="Arial, sans-serif" font-size="24">goodgame.ru</text>
+    </svg>`;
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  }
+  function hashString(value){
+    let h = 2166136261;
+    for (const ch of String(value || '')) {
+      h ^= ch.charCodeAt(0);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+  function hashHue(value){
+    const s = String(value || 'GG');
+    let h = 0;
+    for (let i = 0; i < s.length; i++) {
+      h = ((h << 5) - h) + s.charCodeAt(i);
+      h |= 0;
+    }
+    return Math.abs(h) % 360;
+  }
+
+  function gameArtType(name){
+    const v = normalizeGameName(name).toLowerCase();
+    if (/^(music|музыка|музон|dj|radio)/i.test(v)) return 'music';
+    if (/^(другое|other|разное|misc)/i.test(v)) return 'other';
+    if (/^(без категории|no category|uncategorized|unknown)$/i.test(v)) return 'chill';
+    if (/(just chatting|общение|irl|чатинг|подкаст|talk|на чиле|chill)/i.test(v)) return 'chill';
+    return 'game';
+  }
+  function xmlEscape(value){
+    return String(value == null ? '' : value).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+  }
+  function gameMatch(name, patterns){
+    const v = normalizeGameName(name).toLowerCase();
+    return patterns.some(p => p.test(v));
+  }
+  function specificGameArtwork(name){
+    const label = normalizeGameName(name);
+    const safe = xmlEscape(label.slice(0, 34));
+    const make = (bg, art) => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360"><defs>${bg}</defs>${art}<rect x="24" y="280" width="592" height="56" rx="18" fill="rgba(3,8,20,.50)"/><text x="44" y="318" fill="#fff" font-family="Arial,sans-serif" font-size="30" font-weight="800">${safe}</text></svg>`);
+    if (gameMatch(label,[/world\s*of\s*warcraft/,/^wow$/,/варкрафт/])) return make(`<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1a2749"/><stop offset="55%" stop-color="#6b4e1d"/><stop offset="100%" stop-color="#0f172d"/></linearGradient>`, `<rect width="640" height="360" fill="url(#g)"/><circle cx="480" cy="120" r="90" fill="rgba(255,204,96,.16)"/><path d="M150 228c34-96 92-146 172-146 74 0 132 42 168 126" fill="none" stroke="#d6b16d" stroke-width="18" stroke-linecap="round"/><path d="M198 228c24-54 58-82 106-82 42 0 78 22 110 68" fill="none" stroke="rgba(255,255,255,.20)" stroke-width="10" stroke-linecap="round"/><circle cx="214" cy="146" r="18" fill="#7cc7ff"/><circle cx="428" cy="132" r="18" fill="#7cc7ff"/><rect x="252" y="164" width="132" height="62" rx="18" fill="rgba(14,20,34,.58)" stroke="#d6b16d" stroke-width="4"/><text x="318" y="206" text-anchor="middle" fill="#f3d69a" font-family="Arial,sans-serif" font-size="36" font-weight="800">WOW</text>`);
+    if (gameMatch(label,[/dota\s*2/,/дота/])) return make(`<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1a0f14"/><stop offset="60%" stop-color="#8b1f23"/><stop offset="100%" stop-color="#201014"/></linearGradient>`, `<rect width="640" height="360" fill="url(#g)"/><path d="M208 90h224v180H208z" fill="rgba(20,10,12,.45)" stroke="rgba(255,255,255,.14)" stroke-width="4"/><path d="M252 122l68 66-56 52" fill="none" stroke="#f0504f" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/><path d="M390 114l-72 74 68 58" fill="none" stroke="#f0504f" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/><path d="M286 102l72 70" stroke="rgba(255,255,255,.18)" stroke-width="8"/><path d="M282 268l80-78" stroke="rgba(255,255,255,.14)" stroke-width="8"/>`);
+    if (gameMatch(label,[/minecraft/,/майнкрафт/])) return make(`<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#54b948"/><stop offset="58%" stop-color="#2b6f31"/><stop offset="100%" stop-color="#173c1d"/></linearGradient>`, `<rect width="640" height="360" fill="url(#g)"/><rect x="0" y="226" width="640" height="134" fill="#5c3a22"/><g fill="#7c5a3a"><rect x="20" y="242" width="84" height="46"/><rect x="122" y="238" width="72" height="54"/><rect x="220" y="246" width="96" height="42"/><rect x="344" y="236" width="82" height="58"/><rect x="454" y="244" width="74" height="46"/><rect x="548" y="238" width="70" height="50"/></g><rect x="114" y="94" width="132" height="132" fill="#89d46b" stroke="rgba(0,0,0,.25)"/><rect x="150" y="128" width="22" height="22" fill="#1b1b1b"/><rect x="188" y="128" width="22" height="22" fill="#1b1b1b"/><rect x="164" y="168" width="36" height="18" fill="#1b1b1b"/>`);
+    if (gameMatch(label,[/starcraft/,/старкрафт/])) return make(`<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#071427"/><stop offset="55%" stop-color="#0d3b6f"/><stop offset="100%" stop-color="#0a1220"/></linearGradient>`, `<rect width="640" height="360" fill="url(#g)"/><circle cx="482" cy="110" r="82" fill="rgba(109,196,255,.16)"/><path d="M150 230c26-78 80-122 160-122 76 0 126 34 176 114" fill="none" stroke="#78c5ff" stroke-width="16" stroke-linecap="round"/><path d="M204 246c24-36 66-54 128-54 56 0 102 18 134 54" fill="none" stroke="rgba(255,255,255,.20)" stroke-width="10" stroke-linecap="round"/><text x="320" y="186" text-anchor="middle" fill="#e8f6ff" font-family="Arial,sans-serif" font-size="52" font-weight="800">SC</text>`);
+    if (gameMatch(label,[/counter-?strike/,/^cs2?$/, /контр/,/кс\s?2?/])) return make(`<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1c2430"/><stop offset="58%" stop-color="#d08c33"/><stop offset="100%" stop-color="#2a1d12"/></linearGradient>`, `<rect width="640" height="360" fill="url(#g)"/><path d="M208 242c10-54 48-102 90-126 54-30 100-24 150 2" fill="none" stroke="rgba(255,255,255,.24)" stroke-width="12" stroke-linecap="round"/><rect x="336" y="128" width="120" height="18" rx="9" fill="#1b1b1b"/><rect x="426" y="136" width="78" height="10" rx="5" fill="#1b1b1b"/><rect x="294" y="152" width="48" height="14" rx="7" fill="#1b1b1b"/><path d="M252 188l64-34 30 56-44 22z" fill="#1b1b1b"/><circle cx="278" cy="192" r="14" fill="#f0d3a3"/>`);
+    if (gameMatch(label,[/heroes\s*iii/,/heroes of might and magic iii/,/герои 3/,/герои iii/])) return make(`<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1f1738"/><stop offset="58%" stop-color="#5d2c91"/><stop offset="100%" stop-color="#1a1129"/></linearGradient>`, `<rect width="640" height="360" fill="url(#g)"/><path d="M146 242l74-140 74 140" fill="rgba(255,255,255,.08)" stroke="#f2d38f" stroke-width="6"/><path d="M346 242l60-116 60 116" fill="rgba(255,255,255,.08)" stroke="#f2d38f" stroke-width="6"/><circle cx="220" cy="156" r="18" fill="#f2d38f"/><circle cx="406" cy="144" r="16" fill="#f2d38f"/><text x="320" y="222" text-anchor="middle" fill="#fff0c8" font-family="Arial,sans-serif" font-size="42" font-weight="800">III</text>`);
+    return '';
+  }
+  // FIX: Cache for SVG artwork to avoid regenerating
+  const artworkCache = new Map();
+  function gameArtworkDataUrl(name){
+    const raw = String(name || 'GG').trim();
+    if (artworkCache.has(raw)) return artworkCache.get(raw);
+    const safe = xmlEscape(raw || 'GG');
+    const lower = raw.toLowerCase();
+    const base = hashHue(raw || 'GG');
+    const c1 = `hsl(${base} 72% 58%)`;
+    const c2 = `hsl(${(base+36)%360} 72% 48%)`;
+    const c3 = `hsl(${(base+84)%360} 66% 24%)`;
+    let art = '';
+
+    if (/(music|музык|dj|radio|радио|sound|mix)/i.test(lower)) {
+      art = `
+      <rect width="640" height="360" fill="url(#bg)"/>
+      <rect x="34" y="286" width="572" height="34" rx="16" fill="rgba(255,255,255,.10)"/>
+      <path d="M126 248v-104l160-34v112" fill="none" stroke="rgba(255,255,255,.88)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="126" cy="258" r="28" fill="rgba(255,255,255,.92)"/>
+      <circle cx="286" cy="224" r="28" fill="rgba(255,255,255,.82)"/>
+      <path d="M394 112c42 20 70 50 82 92" fill="none" stroke="rgba(255,255,255,.48)" stroke-width="12" stroke-linecap="round"/>
+      <path d="M430 92c54 26 92 66 108 124" fill="none" stroke="rgba(255,255,255,.24)" stroke-width="10" stroke-linecap="round"/>
+      <rect x="80" y="90" width="28" height="122" rx="12" fill="rgba(255,214,102,.92)" transform="rotate(-18 80 90)"/>
+      <rect x="170" y="74" width="24" height="136" rx="12" fill="rgba(111,184,255,.92)" transform="rotate(12 170 74)"/>
+      <circle cx="522" cy="120" r="18" fill="rgba(255,214,102,.88)"/>
+      <circle cx="554" cy="152" r="14" fill="rgba(111,184,255,.78)"/>`;
+
+    } else if (/(другое|other|misc|разное)/i.test(lower)) {
+      art = `
+      <rect width="640" height="360" fill="url(#bg)"/>
+      <rect x="62" y="58" width="134" height="90" rx="12" fill="rgba(255,255,255,.92)" transform="rotate(-9 62 58)"/>
+      <rect x="206" y="42" width="136" height="96" rx="12" fill="rgba(255,214,102,.92)" transform="rotate(7 206 42)"/>
+      <rect x="358" y="54" width="154" height="98" rx="12" fill="rgba(111,184,255,.92)" transform="rotate(-6 358 54)"/>
+      <rect x="468" y="78" width="110" height="76" rx="12" fill="rgba(255,255,255,.78)" transform="rotate(11 468 78)"/>
+      <rect x="86" y="182" width="156" height="104" rx="12" fill="rgba(111,184,255,.84)" transform="rotate(5 86 182)"/>
+      <rect x="258" y="172" width="142" height="108" rx="12" fill="rgba(255,255,255,.86)" transform="rotate(-8 258 172)"/>
+      <rect x="420" y="184" width="152" height="102" rx="12" fill="rgba(255,214,102,.84)" transform="rotate(6 420 184)"/>
+      <circle cx="130" cy="102" r="10" fill="rgba(10,20,40,.18)"/>
+      <path d="M274 86h44M296 64v44" stroke="rgba(10,20,40,.18)" stroke-width="10" stroke-linecap="round"/>
+      <path d="M456 244l24 14-24 14z" fill="rgba(10,20,40,.16)"/>`;
+
+    } else if (/(starcraft|старкрафт|sc2)/i.test(lower)) {
+      art = `
+      <rect width="640" height="360" fill="#08111f"/>
+      <rect width="640" height="360" fill="url(#bg)" opacity="0.28"/>
+      <path d="M320 56l78 48v88c0 62-36 114-78 142-42-28-78-80-78-142v-88z" fill="rgba(255,255,255,.08)" stroke="rgba(92,214,255,.88)" stroke-width="6"/>
+      <path d="M286 150h68M286 184h68M320 116v104" stroke="rgba(92,214,255,.88)" stroke-width="10" stroke-linecap="round"/>
+      <circle cx="132" cy="88" r="2" fill="rgba(255,255,255,.9)"/>
+      <circle cx="182" cy="54" r="2" fill="rgba(255,255,255,.7)"/>
+      <circle cx="506" cy="92" r="2" fill="rgba(255,255,255,.8)"/>
+      <circle cx="544" cy="148" r="2" fill="rgba(255,255,255,.8)"/>`;
+
+    } else if (/(minecraft|майнкрафт)/i.test(lower)) {
+      art = `
+      <rect width="640" height="360" fill="#87c76a"/>
+      <rect y="228" width="640" height="132" fill="#5f8f44"/>
+      <rect y="246" width="640" height="114" fill="#7b5638"/>
+      <rect x="66" y="82" width="124" height="124" fill="#5f8f44"/>
+      <rect x="84" y="100" width="28" height="28" fill="#7fae5d"/>
+      <rect x="118" y="134" width="30" height="30" fill="#7fae5d"/>
+      <rect x="152" y="106" width="22" height="22" fill="#7fae5d"/>
+      <rect x="420" y="102" width="136" height="104" fill="#8b8b8b"/>
+      <rect x="456" y="132" width="26" height="26" fill="#2b2b2b"/>
+      <rect x="516" y="132" width="26" height="26" fill="#2b2b2b"/>
+      <rect x="484" y="162" width="30" height="18" fill="#2b2b2b"/>`;
+
+    } else {
+      const initials = xmlEscape((raw.replace(/[^A-Za-zА-Яа-яЁё0-9]+/g, ' ').trim().split(/\s+/).slice(0,2).map(s=>s[0]||'').join('').toUpperCase() || raw.slice(0,2).toUpperCase()));
+      art = `
+      <rect width="640" height="360" fill="url(#bg)"/>
+      <circle cx="510" cy="92" r="122" fill="rgba(255,255,255,.06)"/>
+      <rect x="58" y="56" width="180" height="180" rx="34" fill="rgba(255,255,255,.13)" stroke="rgba(255,255,255,.18)" stroke-width="3"/>
+      <text x="148" y="167" text-anchor="middle" fill="rgba(255,255,255,.92)" font-family="Arial, sans-serif" font-size="72" font-weight="800">${initials}</text>
+      <path d="M410 224c28-44 70-68 126-68" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="16" stroke-linecap="round"/>
+      <circle cx="486" cy="236" r="16" fill="rgba(255,255,255,.18)"/>
+      <circle cx="532" cy="236" r="16" fill="rgba(255,255,255,.18)"/>
+      <path d="M430 270h108" stroke="rgba(255,255,255,.12)" stroke-width="14" stroke-linecap="round"/>`;
+    }
+
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360">
+      <defs>
+        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="${c1}"/>
+          <stop offset="52%" stop-color="${c2}"/>
+          <stop offset="100%" stop-color="${c3}"/>
+        </linearGradient>
+      </defs>
+      ${art}
+      <rect x="22" y="286" width="596" height="48" rx="16" fill="rgba(4,10,26,.42)"/>
+      <text x="40" y="318" fill="#ffffff" font-family="Arial, sans-serif" font-size="28" font-weight="700">${safe}</text>
+    </svg>`;
+    const result = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    artworkCache.set(raw, result);
+    return result;
+  }
+  function previewSources(item){
+    if (item?.isGame) {
+      const art = gameArtworkDataUrl(item.name || item.gameName || 'GG');
+      return { primary: art, fallback: art, placeholder: art };
+    }
+    const primary = streamPreview(item);
+    const logo = streamLogo(item);
+    const placeholder = svgPlaceholder(streamDisplayName(item));
+    return { primary: primary || '', fallback: logo || placeholder, placeholder };
+  }
+  function streamSourceCandidates(sources){
+    if (!sources || typeof sources !== 'object') return [];
+    const out = [];
+    const used = new Set();
+    const add = (label, url) => {
+      if (typeof url !== 'string') return;
+      const clean = url.trim();
+      if (!clean || used.has(clean)) return;
+      used.add(clean);
+      out.push({ label, url: clean });
+    };
+    add('source', sources.source);
+    Object.entries(sources)
+      .filter(([k,v]) => /^\d+$/.test(k) && typeof v === 'string' && v.trim())
+      .sort((a,b)=>Number(b[0])-Number(a[0]))
+      .forEach(([k,v]) => add(k, v));
+    add('master', sources.master);
+    add('smil', sources.smil);
+    return out;
+  }
+  function chooseSource(sources){
+    const candidates = streamSourceCandidates(sources);
+    return candidates.length ? candidates[0].url : null;
+  }
+  function goodGameTokenParams(baseUrl){
+    const result = [];
+    try {
+      const u = new URL(baseUrl, location.href);
+      ['expires','token'].forEach((key) => {
+        const value = u.searchParams.get(key);
+        if (value) result.push([key, value]);
+      });
+    } catch (e) {}
+    return result;
+  }
+  function withGoodGameToken(ref, baseUrl){
+    if (!ref || /^data:|^blob:|^javascript:/i.test(ref) || ref[0] === '#') return ref;
+    const tokenParams = goodGameTokenParams(baseUrl);
+    if (!tokenParams.length) return ref;
+    try {
+      const base = new URL(baseUrl, location.href);
+      const u = new URL(ref, base);
+      const host = String(u.hostname || '').toLowerCase();
+      if (!/(^|\.)goodgame\.ru$/.test(host)) return u.href;
+      tokenParams.forEach(([key, value]) => {
+        if (!u.searchParams.has(key)) u.searchParams.set(key, value);
+      });
+      return u.href;
+    } catch (e) {
+      return ref;
+    }
+  }
+  function rewriteHlsPlaylist(data, baseUrl){
+    if (typeof data !== 'string' || data.indexOf('#EXTM3U') < 0) return data;
+    const skipTag = /^(#EXT-X-PART:|#EXT-X-PRELOAD-HINT:|#EXT-X-SERVER-CONTROL:|#EXT-X-PART-INF:)/;
+    return data.split(/\r?\n/).map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return line;
+      if (skipTag.test(trimmed)) return '';
+      if (trimmed[0] === '#') {
+        return line.replace(/URI="([^"]+)"/g, (m, uri) => `URI="${withGoodGameToken(uri, baseUrl)}"`);
+      }
+      return withGoodGameToken(trimmed, baseUrl);
+    }).filter((line) => line !== '').join('\n');
+  }
+  function createGoodGameHlsLoader(){
+    const BaseLoader = window.Hls && window.Hls.DefaultConfig && window.Hls.DefaultConfig.loader;
+    if (!BaseLoader) return null;
+    // Анти-кэш: webOS-браузер может отдавать m3u8 из своего HTTP-кэша (в т.ч. ошибочные ответы),
+    // из-за чего при повторном входе в стрим падал manifestLoadError. Сегменты НЕ трогаем (подписанные URL).
+    let cbCounter = 0;
+    return class GoodGameHlsLoader extends BaseLoader {
+      load(context, config, callbacks){
+        try {
+          const u = context && context.url;
+          if (typeof u === 'string' && /\.m3u8(\?|$)/i.test(u) && !/[?&]_cb=/.test(u)) {
+            context = Object.assign({}, context, { url: u + (u.indexOf('?') >= 0 ? '&' : '?') + '_cb=' + Date.now().toString(36) + (++cbCounter).toString(36) });
+          }
+        } catch (e) {}
+        const originalOnSuccess = callbacks && callbacks.onSuccess;
+        const wrappedCallbacks = Object.assign({}, callbacks, {
+          onSuccess: (response, stats, ctx, networkDetails) => {
+            try {
+              const requestUrl = (ctx && ctx.url) || (context && context.url) || '';
+              if (response && typeof response.data === 'string' && response.data.indexOf('#EXTM3U') >= 0) {
+                response = Object.assign({}, response, { data: rewriteHlsPlaylist(response.data, requestUrl) });
+              }
+            } catch (e) {}
+            if (typeof originalOnSuccess === 'function') originalOnSuccess(response, stats, ctx, networkDetails);
+          }
+        });
+        super.load(context, config, wrappedCallbacks);
+      }
+    };
+  }
+  function destroyHlsPlayer(){
+    if (hlsPlayer) {
+      try { hlsPlayer.destroy(); } catch(e) {}
+      hlsPlayer = null;
+    }
+  }
+  function stopVideo(){
+    destroyHlsPlayer();
+    try { video.pause(); } catch(e) {}
+    video.removeAttribute('src');
+    try { video.load(); } catch(e) {}
+  }
+
+  // === Watchdog: следим, чтобы видео реально продвигалось ===
+  function delay(ms){ return new Promise((resolve) => setTimeout(resolve, ms)); }
+  function startStallWatchdog(){
+    stopStallWatchdog();
+    lastPlaybackTime = video.currentTime || 0;
+    stallCounter = 0;
+    playbackStarted = true;
+    stallCheckTimer = setInterval(stallCheckTick, STALL_CHECK_INTERVAL_MS);
+  }
+  function stopStallWatchdog(){
+    if (stallCheckTimer) { clearInterval(stallCheckTimer); stallCheckTimer = null; }
+    stallCounter = 0;
+  }
+  function liveEdgePosition(){
+    try {
+      if (hlsPlayer && Number.isFinite(hlsPlayer.liveSyncPosition) && hlsPlayer.liveSyncPosition > 0) return hlsPlayer.liveSyncPosition;
+      if (!hlsPlayer && !Number.isFinite(video.duration) && video.buffered.length) {
+        const end = video.buffered.end(video.buffered.length - 1);
+        if (end > 0) return end;
+      }
+    } catch (e) {}
+    return 0;
+  }
+  function tryPullToLiveEdge(){
+    const live = liveEdgePosition();
+    if (!live) return false;
+    const cur = video.currentTime || 0;
+    if (live - cur > 12) {
+      try { video.currentTime = live; } catch (e) {}
+      lastPlaybackTime = video.currentTime;
+      return true;
+    }
+    return false;
+  }
+  function stallCheckTick(){
+    // ВАЖНО: document.hidden здесь НЕ проверяем — прошивки webOS им врут,
+    // из-за этого watchdog молчал и приложение висело без переподключения (исправлено в 2.2.0)
+    if (mode !== 'player' || recoveryBusy) return;
+    if (appHiddenFlag) return;
+    if (video.paused) {
+      stallCounter += 1;
+      if (stallCounter >= STALL_THRESHOLD) {
+        stallCounter = 0;
+        recoverStream('Видео остановилось на паузе');
+      } else {
+        try { const p = video.play(); if (p && p.catch) p.catch(() => {}); } catch (e) {}
+      }
+      return;
+    }
+    const t = video.currentTime || 0;
+    if (t > lastPlaybackTime + 0.2) {
+      // Воспроизведение идёт: проверяем, не отстали ли от живого края (буфер копился, пока приложение было свёрнуто)
+      lastPlaybackTime = t;
+      stallCounter = 0;
+      tryPullToLiveEdge();
+      return;
+    }
+    stallCounter += 1;
+    if (stallCounter >= STALL_THRESHOLD) {
+      try { console.log('GG: watchdog: нет продвижения ~9 c, t=', t.toFixed(2)); } catch (e) {}
+      logCritical('Видео не продвигается ~9 c, запускаю восстановление');
+      stallCounter = 0;
+      recoverStream('Видеопоток перестал продвигаться');
+      return;
+    }
+    // Мягкая мера: перезапускаем сетевую машину hls.js и подтягиваемся к живому краю
+    try { if (hlsPlayer) hlsPlayer.startLoad(); } catch (e) {}
+    tryPullToLiveEdge();
+  }
+
+  function showRestoreBadge(text){
+    if (!restoreBadge || !restoreText) return;
+    restoreText.textContent = text;
+    restoreBadge.classList.add('visible');
+  }
+  function hideRestoreBadge(){
+    if (!restoreBadge) return;
+    restoreBadge.classList.remove('visible');
+  }
+
+  // === Восстановление: перепрашиваем сервер — прекратилась трансляция или это временный обрыв ===
+  async function recoverStream(reason){
+    if (recoveryBusy) return;
+    if (mode !== 'player' || !currentStream) return;
+    recoveryBusy = true;
+    const streamAtStart = currentStream;
+    try { console.log('GG: recoverStream, причина:', reason); } catch (e) {}
+    logCritical('Восстановление потока: ' + reason);
+    try {
+      while (recoveryAttempts < MAX_AUTO_RECOVERY) {
+        if (mode !== 'player' || currentStream !== streamAtStart) break;
+        recoveryAttempts += 1;
+        showRestoreBadge(`Проверяем трансляцию на сервере (${recoveryAttempts}/${MAX_AUTO_RECOVERY})…`);
+        let freshSources = null;
+        try { freshSources = await resolveStreamSources(streamAtStart); } catch (e) { freshSources = null; }
+        if (mode !== 'player' || currentStream !== streamAtStart) break;
+        if (!freshSources || !freshSources.length) {
+          // Отсеиваем кратковременный сбой API: перепроверяем через 3 секунды
+          await delay(3000);
+          if (mode !== 'player' || currentStream !== streamAtStart) break;
+          try { freshSources = await resolveStreamSources(streamAtStart); } catch (e) { freshSources = null; }
+          if (mode !== 'player' || currentStream !== streamAtStart) break;
+        }
+        if (!freshSources || !freshSources.length) {
+          // Сервер больше не отдаёт источники — трансляция прекратилась
+          stopStallWatchdog();
+          hideRestoreBadge();
+          recoveryBusy = false;
+          showError('Трансляция завершена или недоступна на сервере.');
+          return;
+        }
+        try { console.log('GG: recover, API отдал источников:', freshSources ? freshSources.length : 0); } catch (e) {}
+        showRestoreBadge(`Подключаемся к свежему потоку (${recoveryAttempts}/${MAX_AUTO_RECOVERY})…`);
+        try {
+          playbackAttemptToken += 1;
+          stopVideo();
+          await playStreamCandidates(freshSources);
+          if (mode !== 'player' || currentStream !== streamAtStart) { recoveryBusy = false; return; }
+          try { console.log('GG: восстановление успешно'); } catch (e) {}
+          recoveryAttempts = 0;
+          lastPlaybackTime = video.currentTime || 0;
+          hideRestoreBadge();
+          recoveryBusy = false;
+          startStallWatchdog();
+          if (resumePending) { resumePending = false; setTimeout(() => recoverStream('Возврат из другого приложения'), 0); }
+          return;
+        } catch (e) {
+          if (mode !== 'player' || currentStream !== streamAtStart) break;
+          try { console.log('GG: попытка восстановления не удалась:', e && e.message); } catch (e2) {}
+          showRestoreBadge(`Не удалось, повтор через 4 с (${recoveryAttempts}/${MAX_AUTO_RECOVERY})…`);
+          await delay(4000);
+        }
+      }
+      stopStallWatchdog();
+      hideRestoreBadge();
+      recoveryBusy = false;
+      if (mode === 'player' && currentStream === streamAtStart) showError('Не удалось восстановить воспроизведение.\n' + reason);
+      if (resumePending && !appHiddenFlag && mode === 'player' && currentStream === streamAtStart) {
+        resumePending = false;
+        recoveryAttempts = 0;
+        setTimeout(() => recoverStream('Возврат после незавершённого восстановления'), 0);
+      }
+    } catch (e) {
+      recoveryBusy = false;
+      hideRestoreBadge();
+      logCritical('Ошибка восстановления: ' + (e && e.message ? e.message : String(e)));
+    }
+  }
+
+  // === Возврат из другого приложения: сбрасываем буфер и берём свежий поток ===
+  function onAppHidden(){
+    try { console.log('GG: onAppHidden (hidden=' + document.hidden + ')'); } catch (e) {}
+    if (mode !== 'player' || appHiddenFlag) return;
+    appHiddenFlag = true;
+    wasPlayingBeforeHide = playbackStarted || (!video.paused && video.readyState >= 2);
+    if (wasPlayingBeforeHide) {
+      resumePending = true;
+      try { video.pause(); } catch (e) {}
+    }
+  }
+  function onAppVisible(){
+    try { console.log('GG: onAppVisible (hidden=' + document.hidden + ', былСкрыт=' + appHiddenFlag + ')'); } catch (e) {}
+    if (!appHiddenFlag) return;
+    appHiddenFlag = false;
+    const shouldResume = wasPlayingBeforeHide || playbackStarted;
+    wasPlayingBeforeHide = false;
+    if (mode !== 'player' || !shouldResume) return;
+    resumePending = true;
+    if (recoveryBusy) return;
+    resumePending = false;
+    recoveryAttempts = 0;
+    resumeFreshStream();
+  }
+  async function resumeFreshStream(){
+    if (mode !== 'player' || recoveryBusy || !currentStream) return;
+    // Накопленный в фоне буфер не нужен — запрашиваем у сервера свежие ссылки и стартуем заново
+    logCritical('Возврат из другого приложения — сбрасываем буфер, берём свежий поток');
+    await recoverStream('Возврат из другого приложения');
+  }
+  function cacheBustManifest(url){
+    try {
+      if (typeof url === 'string' && /\.m3u8(\?|$)/i.test(url) && !/[?&]_cb=/.test(url)) {
+        return url + (url.indexOf('?') >= 0 ? '&' : '?') + '_cb=' + Date.now().toString(36);
+      }
+    } catch (e) {}
+    return url;
+  }
+  function attemptStreamPlayback(candidate, token, isFirstCandidate, forceNative){
+    const src = cacheBustManifest(candidate && candidate.url ? candidate.url : candidate);
+    const label = candidate && candidate.label ? candidate.label : 'stream';
+    try { console.log('GG: пробуем источник', label, String(src).slice(0, 100)); } catch (e) {}
+    return new Promise((resolve, reject) => {
+      if (!src) { reject(new Error('Пустой HLS URL')); return; }
+      let done = false;
+      let timeoutId = null;
+      const cleanup = () => {
+        clearTimeout(timeoutId);
+        video.removeEventListener('loadedmetadata', onReady);
+        video.removeEventListener('playing', onReady);
+        video.removeEventListener('error', onError);
+      };
+      const finish = () => {
+        if (done) return;
+        done = true;
+        cleanup();
+        try { console.log('GG: стартовал OK:', label); } catch (e) {}
+        resolve(src);
+      };
+      const fail = (err) => {
+        if (done) return;
+        done = true;
+        cleanup();
+        try { console.log('GG: не удалось:', label, '—', err && err.message ? err.message : String(err)); } catch (e) {}
+        reject(err instanceof Error ? err : new Error(String(err || 'Поток не запустился')));
+      };
+      const onReady = () => {
+        if (playbackAttemptToken !== token) return;
+        // loadedmetadata ещё не означает кадры: подтверждаем старт только при наличии данных.
+        if (video.readyState >= 2) finish();
+      };
+      const onError = () => {
+        try { console.log('GG: событие error на video,', label, video.error ? ('код ' + video.error.code + ' ' + (video.error.message || '')) : ''); } catch (e) {}
+        fail(new Error(`Не удалось открыть качество ${label}`));
+      };
+      // FIX: Longer timeout for first candidate, shorter for retries
+      const timeoutMs = isFirstCandidate ? 15000 : 9000;
+      timeoutId = setTimeout(() => fail(new Error(`Качество ${label} не стартовало`)), timeoutMs);
+      video.addEventListener('loadedmetadata', onReady);
+      video.addEventListener('playing', onReady);
+      video.addEventListener('error', onError);
+
+      try {
+        destroyHlsPlayer();
+        if (window.Hls && window.Hls.isSupported && window.Hls.isSupported() && !forceNative) {
+          const Loader = createGoodGameHlsLoader();
+          const config = {
+            lowLatencyMode: false,
+            backBufferLength: 12,
+            maxBufferLength: 20,
+            maxMaxBufferLength: 40,
+            liveSyncDurationCount: 3,
+            manifestLoadingTimeOut: 10000,
+            manifestLoadingMaxRetry: 4,
+            manifestLoadingRetryDelay: 500,
+            manifestLoadingMaxRetryTimeout: 4000,
+            levelLoadingTimeOut: 10000,
+            levelLoadingMaxRetry: 4,
+            levelLoadingRetryDelay: 500,
+            levelLoadingMaxRetryTimeout: 4000,
+            fragLoadingTimeOut: 14000,
+            fragLoadingMaxRetry: 8,
+            fragLoadingRetryDelay: 500,
+            fragLoadingMaxRetryTimeout: 6000,
+            nudgeMaxRetry: 6,
+            startLevel: -1,
+            initialLiveManifestSize: 3,
+            testBandwidth: false,
+            autoStartLoad: true
+          };
+          if (Loader) config.loader = Loader;
+          hlsPlayer = new window.Hls(config);
+          let networkFatalCount = 0;
+          const thisHls = hlsPlayer;
+          hlsPlayer.on(window.Hls.Events.ERROR, (event, data) => {
+            if (!data || !data.fatal || thisHls !== hlsPlayer || playbackAttemptToken !== token) return;
+            const status = data.response && data.response.code;
+            const detail = (data.details || data.type || 'unknown') + (status ? ' HTTP ' + status : '');
+            try { console.log('GG: hls фатальная ошибка:', detail, data.reason || ''); } catch (e) {}
+            logCritical('HLS: ' + detail);
+            if (done) {
+              if (mode === 'player' && !recoveryBusy) recoverStream('HLS ' + detail);
+              return;
+            }
+            if (data.type === window.Hls.ErrorTypes.MEDIA_ERROR) {
+              try { hlsPlayer.recoverMediaError(); return; } catch (e) {}
+              fail(new Error(data.details || 'Ошибка медиаданных'));
+              return;
+            }
+            if (data.type === window.Hls.ErrorTypes.NETWORK_ERROR) {
+              // Манифест не загрузился — ждать бессмысленно, сразу пробуем следующий источник
+              if (data.details === 'manifestLoadError') {
+                fail(new Error('Манифест недоступен (' + (data.reason || 'сеть/кэш') + ')'));
+                return;
+              }
+              // Временный обрыв сети: перезапускаем загрузку того же источника, не меняя качество
+              try { hlsPlayer.stopLoad(); hlsPlayer.startLoad(); } catch (e) {}
+              networkFatalCount += 1;
+              if (networkFatalCount >= 2) fail(new Error(data.details || 'Сетевая ошибка HLS'));
+              return;
+            }
+            fail(new Error(data.details || data.type || `Ошибка HLS ${label}`));
+          });
+          hlsPlayer.on(window.Hls.Events.MANIFEST_PARSED, (event, data) => {
+            try { console.log('GG: манифест разобран, уровней:', hlsPlayer.levels ? hlsPlayer.levels.length : 0); } catch (e) {}
+            // Auto-select highest quality level
+            const levels = hlsPlayer.levels;
+            if (levels && levels.length > 0) {
+              const maxLevel = levels.length - 1;
+              hlsPlayer.currentLevel = maxLevel;
+            }
+            const p = video.play();
+            if (p && typeof p.catch === 'function') p.catch(()=>{});
+          });
+          hlsPlayer.attachMedia(video);
+          hlsPlayer.loadSource(src);
+        } else if (video.canPlayType && video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = src;
+          video.load();
+          const p = video.play();
+          if (p && typeof p.catch === 'function') p.catch(()=>{});
+        } else {
+          fail(new Error('HLS не поддерживается этим webOS-плеером'));
+        }
+      } catch (e) {
+        fail(e);
+      }
+    });
+  }
+  async function playStreamCandidates(candidates){
+    const list = Array.isArray(candidates) ? candidates.filter(c => c && c.url) : [];
+    try { console.log('GG: playStreamCandidates, источников:', list.length); } catch (e) {}
+    if (!list.length) throw new Error('Не удалось получить HLS URL из GoodGame API');
+    playbackAttemptToken += 1;
+    const token = playbackAttemptToken;
+    let lastErr = null;
+    for (let i = 0; i < list.length; i++) {
+      const candidate = list[i];
+      if (playbackAttemptToken !== token) throw new Error('Запуск потока отменён');
+      stopVideo();
+      try {
+        return await attemptStreamPlayback(candidate, token, i === 0);
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    // Аварийный путь: если hls.js не смог ни один источник — пробуем нативный плеер webOS (ТВ умеет HLS сам)
+    if (list[0] && video.canPlayType && video.canPlayType('application/vnd.apple.mpegurl')) {
+      try { console.log('GG: пробуем нативный HLS-плеер webOS'); } catch (e) {}
+      logCritical('hls.js не справился — пробуем нативный плеер webOS');
+      stopVideo();
+      try {
+        return await attemptStreamPlayback({ label: 'native', url: list[0].url }, token, false, true);
+      } catch (e) {
+        lastErr = e;
+      }
+    }
+    try { console.log('GG: ВСЕ кандидаты не удались, последняя ошибка:', lastErr && lastErr.message); } catch (e) {}
+    throw lastErr || new Error('Ни одно качество потока не запустилось');
+  }
+  function parseCandidateTime(value){
+    if (value == null) return 0;
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      if (value > 1e12 && value < Date.now() + 86400000) return value;
+      if (value > 1e9 && value < Math.floor(Date.now()/1000) + 86400) return value * 1000;
+    }
+    if (typeof value === 'string') {
+      const s = value.trim();
+      if (/^\d{13}$/.test(s)) return Number(s);
+      if (/^\d{10}$/.test(s)) return Number(s) * 1000;
+      const parsed = Date.parse(s);
+      if (!Number.isNaN(parsed)) return parsed;
+    }
+    return 0;
+  }
+  function collectCandidateTimes(node, path='', out=[]){
+    if (!node || typeof node !== 'object') return out;
+    if (Array.isArray(node)) { node.forEach((v,i)=>collectCandidateTimes(v, `${path}[${i}]`, out)); return out; }
+    for (const [k, v] of Object.entries(node)) {
+      const p = path ? `${path}.${k}` : k;
+      const score = /(start|started|begin|created|live)/i.test(k) ? 5 : /(time|date|ts|at)$/i.test(k) ? 2 : 0;
+      const parsed = parseCandidateTime(v);
+      if (parsed) out.push({path:p, value:parsed, score});
+      if (v && typeof v === 'object') collectCandidateTimes(v, p, out);
+    }
+    return out;
+  }
+  function pickBestStartTime(candidates){
+    const now = Date.now();
+    const filtered = candidates.filter(c => c.value > now - 14*24*3600*1000 && c.value < now + 5*60*1000);
+    filtered.sort((a,b)=>(b.score-a.score)||(b.value-a.value));
+    return filtered.length ? filtered[0].value : 0;
+  }
+  async function fetchWithTimeout(url, ms, asJson){
+    const useSignal = typeof AbortController === 'function';
+    const ctrl = useSignal ? new AbortController() : null;
+    const timer = setTimeout(() => { if (ctrl) { try { ctrl.abort(); } catch (e) {} } }, ms || 8000);
+    try {
+      const r = await fetch(url, { cache: 'no-store', signal: ctrl ? ctrl.signal : undefined });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return await (asJson ? r.json() : r.text());
+    } finally { clearTimeout(timer); }
+  }
+  async function fetchJson(url){ return fetchWithTimeout(url, 8000, true); }
+  async function fetchText(url){ return fetchWithTimeout(url, 8000, false); }
+  function stopBackgroundRefresh() {
+    clearInterval(backgroundRefreshTimer);
+  }
+
+  async function fetchStreamsPage(page=1){
+    // Используем актуальный API v4.5 endpoint
+    const queries = [
+      `https://goodgame.ru/api/4/streams/2/?hidden=true&only_gg=1&page=${page}&onpage=${API_ONPAGE}`,
+      `https://goodgame.ru/api/4/streams/2/?only_gg=1&page=${page}&onpage=${API_ONPAGE}`,
+      `https://goodgame.ru/api/4/streams/2/?page=${page}&onpage=${API_ONPAGE}`
+    ];
+
+    function isProbablyLive(s){
+      if (!s || typeof s !== 'object') return false;
+
+      const status = String(s.status ?? '').toLowerCase();
+      if (s.status === true) return true;
+      if (status === 'live' || status === 'online' || status === 'onair' || status === 'on air') return true;
+
+      const onlineNum = Number(s.online);
+      if (Number.isFinite(onlineNum) && onlineNum > 0) return true;
+
+      const streamViewers = Number(s.stream_viewers);
+      if (Number.isFinite(streamViewers) && streamViewers > 0) return true;
+
+      const viewers = Number(s.viewers);
+      if (Number.isFinite(viewers) && viewers >= 0 && (s.channelkey || s.id || s.key || s.streamkey || s.streamer)) return true;
+
+      if (s.channelkey || s.id || s.key || s.streamkey) return true;
+
+      return false;
+    }
+
+    let lastError = null;
+    for (const url of queries) {
+      try {
+        const data = await fetchJson(url);
+        // Поддержка разных структур ответа API v4.5
+        let list = null;
+        if (Array.isArray(data?.streams)) {
+          list = data.streams;
+        } else if (Array.isArray(data)) {
+          list = data;
+        }
+        if (list) {
+          const filtered = list.filter(isProbablyLive);
+          return {
+            streams: filtered,
+            total: data?.queryInfo?.qty || data?.total || filtered.length
+          };
+        }
+      } catch (e) {
+        lastError = e;
+      }
+    }
+    throw lastError || new Error('Не удалось загрузить список стримов');
+  }
+
+  // FIX: Fetch pages in parallel batches
+  async function fetchAllStreams(maxPages=API_MAX_PAGES){
+    let all = [];
+    let total = 0;
+    const batchSize = 3;
+
+    for (let i = 1; i <= maxPages; i += batchSize) {
+      const promises = [];
+      for (let j = 0; j < batchSize && (i + j) <= maxPages; j++) {
+        promises.push(fetchStreamsPage(i + j));
+      }
+      const results = await Promise.all(promises);
+
+      for (const data of results) {
+        if (!total) total = data.total || data.streams.length;
+        all = all.concat(data.streams);
+      }
+      
+      if (all.length >= total || results.some(d => !d.streams.length)) break;
+      await new Promise(r=>setTimeout(r, 60));
+    }
+    return {streams: all, total: total || all.length};
+  }
+  
+  function normalizeGameName(name){
+    return String(name || '').replace(/ /g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  function slugifyGame(name){
+    return normalizeGameName(name)
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9а-яё]+/gi, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+  function buildGamesFromStreams(list){
+    const gamesMap = new Map();
+
+    for (const stream of (list || [])) {
+      const rawName = normalizeGameName(streamGame(stream) || 'Без категории');
+      const slug = slugifyGame(rawName) || 'no-category';
+      const viewers = streamViewerCount(stream);
+      const streamKey = streamIdentity(stream) || streamNickname(stream) || String(stream?.id || stream?.key || stream?.streamkey || '');
+      const topPreview = streamPreview(stream) || streamLogo(stream) || '';
+      const fallbackArt = gameArtworkDataUrl(rawName);
+
+      let existing = gamesMap.get(slug);
+      if (!existing) {
+        existing = {
+          slug,
+          name: rawName,
+          count: 0,
+          title: rawName,
+          subtitle: '',
+          gameName: rawName,
+          coverUrl: topPreview || fallbackArt,
+          previewUrl: topPreview || fallbackArt,
+          logo: topPreview || fallbackArt,
+          isGame: true,
+          viewers: 0,
+          streamers: 0,
+          streams: [],
+          key: slug,
+          _seen: new Set(),
+          _previewViewers: -1
+        };
+        gamesMap.set(slug, existing);
+      }
+
+      if (streamKey && existing._seen.has(streamKey)) {
+        continue;
+      }
+
+      if (streamKey) existing._seen.add(streamKey);
+
+      existing.count += 1;
+      existing.streamers = existing.count;
+      existing.viewers += viewers;
+      existing.streams.push(stream);
+
+      if (topPreview && viewers >= Number(existing._previewViewers || -1)) {
+        existing.coverUrl = topPreview;
+        existing.previewUrl = topPreview;
+        existing.logo = topPreview;
+        existing._previewViewers = viewers;
+      } else if (!existing.coverUrl) {
+        existing.coverUrl = fallbackArt;
+        existing.previewUrl = fallbackArt;
+        existing.logo = fallbackArt;
+      }
+    }
+
+    for (const game of gamesMap.values()) {
+      game.title = game.name;
+      game.subtitle = `${game.count} ${game.count === 1 ? 'стрим' : (game.count >= 2 && game.count <= 4 ? 'стрима' : 'стримов')}`;
+      delete game._seen;
+      delete game._previewViewers;
+    }
+
+    return Array.from(gamesMap.values()).sort(
+      (a,b) => (b.viewers - a.viewers) || (b.count - a.count) || a.name.localeCompare(b.name, 'ru')
+    );
+  }
+  function streamsAgeMs(){
+    return lastStreamsFetchAt ? (Date.now() - lastStreamsFetchAt) : Number.POSITIVE_INFINITY;
+  }
+  async function refreshStreams(options={}){
+    const force = !!options.force;
+    const minAge = Number.isFinite(options.minAge) ? options.minAge : 0;
+
+    if (!force && streams.length && streamsAgeMs() < minAge) {
+      return { streams, total: totalStreamCount || streams.length, refreshed: false };
+    }
+
+    if (streamsRefreshPromise) return streamsRefreshPromise;
+
+    streamsRefreshPromise = (async () => {
+      const data = await fetchAllStreams();
+      streams = Array.isArray(data.streams) ? data.streams : [];
+      totalStreamCount = data.total || streams.length;
+      games = buildGamesFromStreams(streams);
+      refreshFavoritesFromLiveData();
+      lastStreamsFetchAt = Date.now();
+      return { streams, total: totalStreamCount, refreshed: true };
+    })();
+
+    try {
+      return await streamsRefreshPromise;
+    } finally {
+      streamsRefreshPromise = null;
+    }
+  }
+  async function fetchGamesList(){
+    if (!streams.length) {
+      await refreshStreams({ force: true });
+    }
+
+    games = buildGamesFromStreams(streams);
+    return Array.isArray(games) ? games : [];
+  }
+  async function fetchStreamsForGame(slug){
+    if (!streams.length) {
+      await refreshStreams({ force: true });
+    }
+
+    const filtered = [];
+    const seen = new Set();
+
+    for (const s of streams) {
+      const gameSlug = slugifyGame(streamGame(s) || 'Без категории') || 'no-category';
+      if (gameSlug !== slug) continue;
+
+      const key = streamIdentity(s) || streamNickname(s) || String(s?.id || s?.key || s?.streamkey || '');
+      if (key && seen.has(key)) continue;
+      if (key) seen.add(key);
+
+      filtered.push(s);
+    }
+
+    return filtered.sort((a,b) => streamViewerCount(b) - streamViewerCount(a));
+  }
+  async function maybeRefreshVisibleView(force){
+    if (mode !== 'browser') return;
+    try {
+      await refreshStreams({ force: !!force, minAge: STREAMS_BG_REFRESH_MS });
+    } catch (e) {
+      console.error('background refresh failed', e);
+      return;
+    }
+
+    if (browserView === 'all_streams') {
+      currentItems = streams.slice();
+      totalStreamCount = streams.length;
+      if (focusIndex >= currentItems.length) focusIndex = Math.max(0, currentItems.length - 1);
+      renderedPage = -1;
+      renderGrid(true);
+      return;
+    }
+
+    if (browserView === 'games') {
+      games = buildGamesFromStreams(streams);
+      currentItems = games.slice();
+      if (focusIndex >= currentItems.length) focusIndex = Math.max(0, currentItems.length - 1);
+      renderedPage = -1;
+      renderGrid(true);
+      return;
+    }
+
+    if (browserView === 'favorites') {
+      currentItems = getFavoriteItems();
+      totalStreamCount = currentItems.length;
+      if (focusIndex >= currentItems.length) focusIndex = Math.max(0, currentItems.length - 1);
+      renderedPage = -1;
+      renderGrid(true);
+      return;
+    }
+
+    if (browserView === 'game_streams' && selectedGame) {
+      currentItems = await fetchStreamsForGame(selectedGame.slug);
+      totalStreamCount = currentItems.length;
+      if (focusIndex >= currentItems.length) focusIndex = Math.max(0, currentItems.length - 1);
+      renderedPage = -1;
+      renderGrid(true);
+    }
+  }
+  function startBackgroundRefresh(){
+    clearInterval(backgroundRefreshTimer);
+    backgroundRefreshTimer = setInterval(() => {
+      maybeRefreshVisibleView(false);
+    }, STREAMS_BG_REFRESH_MS);
+  }
+  function getPageCount(items){ return Math.max(1, Math.ceil((items.length || 1) / PAGE_SIZE)); }
+  function getCurrentViewPage(){ return Math.floor(focusIndex / PAGE_SIZE) + 1; }
+  function setActiveTab(tab){
+    activeTab = tab;
+    tabs.forEach(el => el.classList.toggle('active', el.dataset.tab === tab));
+  }
+  function currentPageItems(){
+    const page = getCurrentViewPage();
+    const start = (page-1)*PAGE_SIZE;
+    return currentItems.slice(start, start+PAGE_SIZE);
+  }
+  function updatePager(){
+    requestAnimationFrame(() => {
+      const page = getCurrentViewPage();
+      const totalPages = getPageCount(currentItems);
+      const countValue = totalStreamCount || currentItems.length;
+      if (streamsCount) streamsCount.textContent = `Стримов: ${countValue}`;
+      if (pageInfo) pageInfo.textContent = `Страница ${page} из ${totalPages}`;
+      updateTopFocus();
+    });
+  }
+
+  function escapeHtml(str){
+    return sanitize(str).replace(/\n/g, '<br>');
+  }
+  function formatGameCardTitle(name){
+    const raw = normalizeGameName(name || '').toUpperCase();
+    if (!raw) return '';
+    const words = raw.split(/\s+/).filter(Boolean);
+    if (words.length <= 1) return raw;
+
+    const fullCompact = raw.replace(/\s+/g, ' ').trim();
+    const last = words[words.length - 1] || '';
+    const secondLineOnlyShort = last.length <= 2;
+
+    if (secondLineOnlyShort) return fullCompact;
+
+    let best = fullCompact;
+    let bestScore = Infinity;
+    for (let i = 1; i < words.length; i++) {
+      const left = words.slice(0, i).join(' ');
+      const right = words.slice(i).join(' ');
+      if (!left || !right) continue;
+      if (right.length <= 2) continue;
+      const score = Math.abs(left.length - right.length);
+      if (score < bestScore) {
+        bestScore = score;
+        best = left + '\n' + right;
+      }
+    }
+    return best;
+  }
+  function fitGameCardTitles(){
+    clearTimeout(fitGameCardTitlesDebounce);
+    fitGameCardTitlesDebounce = setTimeout(() => {
+      const nodes = Array.from(grid.querySelectorAll('.card.games-card .channel'));
+      nodes.forEach((el) => {
+        const multiline = el.dataset.multiline === '1';
+        let size = multiline ? 36 : 34;
+        const minSize = multiline ? 18 : 16;
+        el.style.fontSize = size + 'px';
+        el.style.whiteSpace = multiline ? 'normal' : 'nowrap';
+        el.style.display = multiline ? 'block' : 'flex';
+        el.style.alignItems = 'center';
+        el.style.justifyContent = 'center';
+
+        const fits = () => {
+          if (!multiline) return el.scrollWidth <= el.clientWidth;
+          const lineHeight = parseFloat(getComputedStyle(el).lineHeight) || (size * 1.08);
+          return el.scrollHeight <= lineHeight * 2.15 && el.scrollWidth <= el.clientWidth + 2;
+        };
+
+        while (size > minSize && !fits()) {
+          size -= 1;
+          el.style.fontSize = size + 'px';
+        }
+      });
+    }, 50);
+  }
+
+  function updateTopFocus(){
+    topControls.forEach((el, idx) => el.classList.toggle('focused', uiZone === 'top' && idx === topFocusIndex));
+  }
+  function triggerAboutGlow(){
+    if (!brandSub) return;
+    brandSub.classList.add('glow');
+    clearTimeout(aboutGlowTimer);
+    aboutGlowTimer = setTimeout(() => brandSub.classList.remove('glow'), ABOUT_GLOW_MS);
+  }
+
+  function closeAboutOverlay(){
+    if (!aboutOverlay) return;
+    aboutOverlay.classList.remove('visible');
+    clearTimeout(aboutOverlayTimer);
+  }
+  function showAboutOverlay(){
+    if (!aboutOverlay) return;
+    clearTimeout(aboutOverlayTimer);
+    aboutOverlay.classList.add('visible');
+    aboutOverlayTimer = setTimeout(() => {
+      closeAboutOverlay();
+    }, ABOUT_OVERLAY_MS);
+  }
+  async function activateTopControl(){
+    const el = topControls[topFocusIndex];
+    if (!el) return;
+    playClickSound();
+    if (el.dataset.tab === 'streams') { await loadAllStreamsView({ keepTopFocus: true }); return; }
+    if (el.dataset.tab === 'games') { await loadGamesView({ keepTopFocus: true }); return; }
+    if (el.dataset.tab === 'random') { await openRandomStream(); return; }
+    if (el.dataset.tab === 'favorites') { await loadFavoritesView({ keepTopFocus: true }); return; }
+    if (el.dataset.action === 'first') { focusIndex = 0; renderedPage = -1; renderGrid(true); return; }
+    if (el.dataset.action === 'prev') { changePage(-1); return; }
+    if (el.dataset.action === 'next') { changePage(1); return; }
+    if (el.dataset.action === 'about') { triggerAboutGlow(); showAboutOverlay(); return; }
+  }
+  function changePage(delta){
+    const totalPages = getPageCount(currentItems);
+    const page = getCurrentViewPage();
+    const targetPage = Math.max(1, Math.min(totalPages, page + delta));
+    if (targetPage === page) return;
+    const col = focusIndex % GRID_COLS;
+    const row = Math.floor((focusIndex % PAGE_SIZE) / GRID_COLS);
+    const pageStart = (targetPage - 1) * PAGE_SIZE;
+    let newIndex = pageStart + row * GRID_COLS + col;
+    if (newIndex >= currentItems.length) newIndex = currentItems.length - 1;
+    focusIndex = Math.max(0, newIndex);
+    renderedPage = -1;
+    renderGrid(true);
+  }
+  
+  // FIX: DOM Pooling
+  const gridPool = [];
+  let fitGameCardTitlesDebounce = null;
+  function initGridPool() {
+      if (gridPool.length) return;
+      for (let i = 0; i < PAGE_SIZE; i++) {
+          const card = document.createElement('article');
+          card.className = 'card empty';
+          card.innerHTML = `
+              <div class="thumbPlaceholder"></div>
+              <img class="pending" alt="">
+              <div class="cardShade"></div>
+              <div class="status"><span class="dot"></span><span class="status-label"></span><span class="statusFavorite inactive">☆</span></div>
+              <div class="viewers"></div>
+              <div class="meta">
+                  <div class="channel"></div>
+                  <div class="title"></div>
+                  <div class="game"></div>
+              </div>
+          `;
+          grid.appendChild(card);
+          gridPool.push(card);
+      }
+  }
+
+  function renderGrid(force=false){
+    const page = getCurrentViewPage();
+    if (!force && page === renderedPage && gridPool.length) {
+      updatePager();
+      syncFocusedCard();
+      return;
+    }
+    renderedPage = page;
+    lastHoverIndex = -1;
+
+    if (!gridPool.length) initGridPool();
+
+    const start = (page-1)*PAGE_SIZE;
+    const pageItems = currentItems.slice(start, start + PAGE_SIZE);
+
+    for (let offset=0; offset<PAGE_SIZE; offset++){
+      const i = start + offset;
+      const s = pageItems[offset];
+      const card = gridPool[offset];
+
+      card.dataset.index = i;
+
+      const img = card.querySelector('img');
+      if (!s) {
+        card.className = 'card empty';
+        card.dataset.streamKey = '';
+        if (img) { img.dataset.src = ''; img.src = ''; img.removeAttribute('src'); }
+        continue;
+      }
+
+      const isGamesGrid = browserView === 'games';
+      const offline = !!s.offline;
+      const name = sanitize(isGamesGrid ? s.name : streamDisplayName(s));
+      const title = sanitize(isGamesGrid ? (s.subtitle || `${s.count || 0} ${((s.count || 0) === 1 ? 'стрим' : ((s.count || 0) >= 2 && (s.count || 0) <= 4 ? 'стрима' : 'стримов'))}`) : (s.title || s.stream_title || 'Без названия'));
+      const game = sanitize(isGamesGrid ? '' : streamGame(s));
+      const preview = isGamesGrid ? { primary: '', fallback: '', placeholder: '' } : previewSources(s);
+      const imgSrc = sanitize(preview.primary || preview.fallback || '');
+      const fallbackSrc = sanitize(preview.fallback || preview.placeholder || '');
+      const viewersNum = isGamesGrid ? Number(s.viewers || 0) : streamViewerCount(s);
+      const viewers = sanitize(String(viewersNum));
+      const key = sanitize(isGamesGrid ? `game|${s.slug}` : streamIdentity(s));
+      const statusLabel = isGamesGrid ? '' : (offline ? 'OFFLINE' : 'LIVE');
+      const viewersLabel = `${viewers} зр.`;
+      const favCls = isFavorite(s) ? 'active' : 'inactive';
+
+      card.className = `card ${offline ? 'offline' : ''} ${i === focusIndex ? 'focused' : ''} ${isGamesGrid ? 'games-card' : ''}`;
+      card.dataset.streamKey = key;
+
+      const thumbPlaceholder = card.querySelector('.thumbPlaceholder');
+      const statusDot = card.querySelector('.status .dot');
+      const statusLabelNode = card.querySelector('.status-label');
+      const statusFavNode = card.querySelector('.statusFavorite');
+      const viewersNode = card.querySelector('.viewers');
+      const channelNode = card.querySelector('.channel');
+      const titleNode = card.querySelector('.title');
+      const gameNode = card.querySelector('.game');
+
+      if (isGamesGrid) {
+          if (img) { img.dataset.src = ''; img.src = ''; img.removeAttribute('src'); }
+      } else {
+          if (img) {
+              if (img.dataset.key !== key || img.dataset.src !== imgSrc) {
+                  img.dataset.src = imgSrc;
+                  img.dataset.fallback = fallbackSrc;
+                  img.dataset.key = key;
+                  img.removeAttribute('src');
+                  img.className = 'pending';
+                  delete img.dataset.loaded;
+                  delete img.dataset.loading;
+                  delete img.dataset.retry;
+                  if (thumbPlaceholder) thumbPlaceholder.style.display = '';
+              }
+          }
+      }
+
+      if (viewersNode) viewersNode.innerHTML = viewersLabel;
+      if (channelNode) {
+          if (isGamesGrid) {
+              const formattedName = formatGameCardTitle(s.name || s.gameName || '');
+              channelNode.dataset.multiline = formattedName.indexOf('\n') >= 0 ? '1' : '0';
+              channelNode.innerHTML = escapeHtml(formattedName);
+          } else {
+              channelNode.innerHTML = name;
+          }
+      }
+      if (titleNode) titleNode.innerHTML = title;
+      if (gameNode) gameNode.innerHTML = game || '&nbsp;';
+
+      if (statusLabelNode) statusLabelNode.innerHTML = statusLabel;
+      if (statusDot) statusDot.style.display = isGamesGrid ? 'none' : '';
+      if (statusFavNode) {
+          statusFavNode.className = `statusFavorite ${favCls}`;
+          statusFavNode.innerHTML = isFavorite(s) ? '★' : '☆';
+      }
+    }
+
+    fitGameCardTitles();
+    updatePager();
+    syncFocusedCard();
+    scheduleVisibleImageLoad(true);
+    loadVisibleImages(true);
+  }
+
+  function scheduleVisibleImageLoad(immediate=false){
+    clearTimeout(deferredImageTimer);
+    if (immediate) return loadVisibleImages(true);
+    deferredImageTimer = setTimeout(() => loadVisibleImages(false), 180);
+  }
+  function loadVisibleImages(forceAll=false){
+    const imgs = Array.from(grid.querySelectorAll('img[data-src]'));
+    let slots = Math.max(1, MAX_ACTIVE_IMAGE_LOADS - activeImageLoads);
+    for (const img of imgs) {
+      if (slots <= 0) break;
+      if (!img.dataset.src || img.dataset.loading === '1' || img.dataset.loaded === '1') continue;
+      const baseSrc = img.dataset.src, fallbackSrc = img.dataset.fallback || '', key = img.dataset.key || '', retry = Number(img.dataset.retry || '0');
+      const requestSrc = retry > 0 && /^https?:/i.test(baseSrc) ? `${baseSrc}${baseSrc.includes('?') ? '&' : '?'}r=${retry}` : baseSrc;
+      img.dataset.loading = '1'; activeImageLoads += 1; slots -= 1;
+      const probe = new Image(); probe.decoding = 'async';
+      probe.onload = () => {
+        activeImageLoads = Math.max(0, activeImageLoads - 1);
+        if (!img.isConnected || img.dataset.key !== key || img.dataset.src !== baseSrc) { delete img.dataset.loading; return; }
+        img.src = requestSrc; img.classList.remove('pending'); img.classList.add('ready'); img.dataset.loaded='1'; delete img.dataset.loading; delete img.dataset.retry;
+        const ph = img.previousElementSibling; if (ph && ph.classList.contains('thumbPlaceholder')) ph.style.display='none';
+      };
+      probe.onerror = () => {
+        activeImageLoads = Math.max(0, activeImageLoads - 1);
+        // Cancel if card moved
+        if (!img.isConnected || img.dataset.key !== key) { delete img.dataset.loading; return; }
+        delete img.dataset.loading;
+        const nextRetry = retry + 1; img.dataset.retry = String(nextRetry);
+        if (nextRetry <= 4 && /^https?:/i.test(baseSrc)) {
+          setTimeout(() => loadVisibleImages(forceAll), 260 * nextRetry);
+        } else if (fallbackSrc) {
+          img.src = fallbackSrc; img.classList.remove('pending'); img.classList.add('ready'); img.dataset.loaded='1';
+          const ph = img.previousElementSibling; if (ph && ph.classList.contains('thumbPlaceholder')) ph.style.display='none';
+        }
+      };
+      probe.src = requestSrc;
+    }
+  }
+  function syncFocusedCard(){
+    requestAnimationFrame(() => {
+      grid.querySelectorAll('.card.focused').forEach(el => el.classList.remove('focused'));
+      if (uiZone === 'grid') {
+        const active = grid.querySelector(`.card[data-index="${focusIndex}"]`);
+        if (active && !active.classList.contains('empty')) active.classList.add('focused');
+      }
+      scheduleVisibleImageLoad();
+      updateTopFocus();
+    });
+  }
+  function updateFocus(){
+    requestAnimationFrame(() => {
+      const page = getCurrentViewPage();
+      if (page !== renderedPage) renderGrid(true);
+      else syncFocusedCard();
+    });
+  }
+  async function loadAllStreamsView(options={}){
+    browserView = 'all_streams';
+    selectedGame = null;
+    setActiveTab('streams');
+    showMessage('Загрузка', 'Получаем список стримов…', 0);
+    try {
+      await refreshStreams({ force: !streams.length, minAge: STREAMS_STALE_MS });
+    } catch (e) {
+      if (!streams.length) throw e;
+    }
+    currentItems = streams.slice();
+    totalStreamCount = streams.length;
+    focusIndex = 0;
+    uiZone = options.keepTopFocus ? 'top' : 'grid';
+    topFocusIndex = 0;
+    clearMessage();
+    renderedPage = -1;
+    renderGrid(true);
+    if (!currentItems.length) showMessage('Пусто', 'Сейчас не удалось найти активные стримы.', 3500);
+  }
+  async function loadGamesView(options={}){
+    browserView = 'games';
+    selectedGame = null;
+    setActiveTab('games');
+    showMessage('Загрузка', 'Получаем список игр…', 0);
+
+    try {
+      await refreshStreams({ force: !streams.length, minAge: STREAMS_STALE_MS });
+      games = await fetchGamesList();
+      currentItems = Array.isArray(games) ? games.slice() : [];
+      totalStreamCount = streams.length || totalStreamCount || 0;
+      focusIndex = 0;
+      uiZone = options.keepTopFocus ? 'top' : 'grid';
+      topFocusIndex = 1;
+      clearMessage();
+      renderedPage = -1;
+      applyAdaptiveGrid();
+      renderGrid(true);
+      if (!currentItems.length) showMessage('Пусто', 'Сейчас нет активных игр.', 3500);
+    } catch (e) {
+      console.error('loadGamesView failed', e);
+      clearMessage();
+      showMessage('Ошибка', 'Игры не загрузились.', 3500);
+    }
+  }
+
+  async function loadFavoritesView(options={}){
+    browserView = 'favorites';
+    selectedGame = null;
+    setActiveTab('favorites');
+    try {
+      await refreshStreams({ force: !streams.length, minAge: STREAMS_STALE_MS });
+    } catch (e) {}
+    currentItems = getFavoriteItems();
+    totalStreamCount = currentItems.length;
+    focusIndex = 0;
+    uiZone = options.keepTopFocus ? 'top' : 'grid';
+    topFocusIndex = 3;
+    clearMessage();
+    renderedPage = -1;
+    applyAdaptiveGrid();
+    renderGrid(true);
+    if (!currentItems.length) showMessage('Избранные', 'Нет избранных стримов.', 3500);
+  }
+  async function openRandomStream(){
+    showMessage('Случайный стрим', 'Выбираем случайный онлайн-стрим…', 0);
+    try {
+      await refreshStreams({ force: !streams.length, minAge: STREAMS_STALE_MS });
+      const onlineWithViewers = streams.filter(s => s && streamViewerCount(s) > 1);
+      const online = onlineWithViewers.length ? onlineWithViewers : streams.filter(Boolean);
+      if (!online.length) throw new Error('Нет активных стримов');
+      const pick = online[Math.floor(Math.random() * online.length)];
+      clearMessage();
+      const idx = streams.findIndex(s => streamIdentity(s) === streamIdentity(pick));
+      if (idx >= 0) {
+        focusIndex = idx;
+        currentItems = streams.slice();
+        setActiveTab('streams');
+        renderedPage = -1;
+        returnToAllStreamsOnBack = true;
+        renderGrid(true);
+        await openStream(idx);
+        return;
+      }
+      returnToAllStreamsOnBack = true;
+      await openStreamFromObject(pick);
+    } catch (e) {
+      clearMessage();
+      showMessage('Ошибка', 'Не удалось открыть случайный стрим.', 3000);
+    }
+  }
+  async function openStreamFromObject(stream){
+    if (!stream) return;
+    currentStream = stream;
+    playbackStarted = false;
+    resumePending = false;
+    appHiddenFlag = false;
+    recoveryAttempts = 0;
+    if (isFavorite(currentStream)) {
+      addFavorite(currentStream);
+    }
+    mode = 'player';
+    
+    // FIX: Pause BG refresh while in player
+    stopBackgroundRefresh();
+    
+    browser.classList.add('hidden');
+    player.classList.remove('hidden');
+    resetPlayerUI();
+    try {
+      const [sources, startedAt] = await Promise.all([resolveStreamSources(stream), resolveStartTime(stream)]);
+      if (startedAt) streamStartedAtMs = startedAt;
+      await playStreamCandidates(sources);
+      startStallWatchdog();
+      setTimeout(showOverlay, 3000);
+    } catch (err) {
+      // FIX: Don't show error if video is already playing
+      if (!video.paused && video.readyState >= 2) {
+        startStallWatchdog();
+        setTimeout(showOverlay, 3000);
+      } else {
+        // Перепрашиваем сервер и пробуем восстановить воспроизведение
+        await recoverStream('Ошибка запуска потока: ' + (err && err.message ? err.message : String(err)));
+      }
+    }
+  }
+  async function activateCurrent(){
+    const item = currentItems[focusIndex];
+    if (!item) return;
+    playClickSound();
+    if (browserView === 'games') {
+      try {
+        showMessage('Загрузка', `Открываем игру: ${item.name}`, 0);
+        const list = await fetchStreamsForGame(item.slug);
+        clearMessage();
+        if (!list.length) { showMessage('Пусто', 'Для этой игры сейчас нет доступных стримов.', 2500); return; }
+        selectedGame = item;
+        browserView = 'game_streams';
+        currentItems = list.slice();
+        totalStreamCount = currentItems.length;
+        focusIndex = 0;
+        uiZone = 'grid';
+        topFocusIndex = 1;
+        setActiveTab('games');
+        renderedPage = -1;
+        applyAdaptiveGrid();
+        renderGrid(true);
+      } catch (e) {
+        clearMessage();
+        showMessage('Ошибка', 'Не удалось загрузить стримы для выбранной игры.', 3000);
+      }
+      return;
+    }
+    await openStream(focusIndex);
+  }
+  function stackPlayerBadges(){
+    const left = [titleBadge, liveBadge].filter(Boolean);
+    const right = [resBadge, viewerBadge].filter(Boolean);
+    const startTop = 28;
+    const gap = 18;
+
+    let topLeft = startTop;
+    for (const el of left) {
+      el.style.left = '32px';
+      el.style.right = 'auto';
+      el.style.top = `${topLeft}px`;
+      const h = Math.ceil(el.getBoundingClientRect().height || 56);
+      topLeft += h + gap;
+    }
+
+    let topRight = startTop;
+    for (const el of right) {
+      el.style.left = 'auto';
+      el.style.right = '32px';
+      el.style.top = `${topRight}px`;
+      const h = Math.ceil(el.getBoundingClientRect().height || 56);
+      topRight += h + gap;
+    }
+  }
+
+  function resetPlayerUI(){
+    clearError();
+    streamStartedAtMs = 0;
+    liveText.textContent = '--:--:--';
+    resText.textContent = '--×--';
+    viewerText.textContent = '0 зр.';
+    titleText.textContent = '';
+    channelLogo.classList.remove('visible');
+    channelLogo.removeAttribute('src');
+    liveBadge.classList.remove('visible');
+    viewerBadge.classList.remove('visible');
+    resBadge.classList.remove('visible');
+    if (favoriteChip) { favoriteChip.textContent = '☆ В избранное'; favoriteChip.classList.remove('pulsing'); }
+    titleBadge.classList.remove('visible');
+  }
+  function updateOverlayText(){
+    liveText.textContent = streamStartedAtMs ? fmt((Date.now()-streamStartedAtMs)/1000) : '--:--:--';
+    const w = video.videoWidth || 0, h = video.videoHeight || 0;
+    resText.textContent = (w && h) ? `${w}×${h}` : '--×--';
+  }
+  function showOverlay(){
+    updateOverlayText();
+    if (currentStream) {
+      const logo = streamLogo(currentStream);
+      if (logo) { channelLogo.src = logo; channelLogo.classList.add('visible'); } else { channelLogo.classList.remove('visible'); channelLogo.removeAttribute('src'); }
+      const viewers = streamViewerCount(currentStream);
+      viewerText.textContent = `${viewers} зр.`;
+      titleText.textContent = currentStream.title || streamDisplayName(currentStream) || 'Без названия';
+      updateOverlayFavoriteState();
+      if (favoriteChip) favoriteChip.classList.add('pulsing');
+    }
+    titleBadge.classList.add('visible');
+    liveBadge.classList.add('visible');
+    viewerBadge.classList.add('visible');
+    resBadge.classList.add('visible');
+    requestAnimationFrame(() => {
+      stackPlayerBadges();
+      requestAnimationFrame(stackPlayerBadges);
+    });
+    clearTimeout(overlayTimer);
+    overlayTimer = setTimeout(() => {
+      titleBadge.classList.remove('visible');
+      if (favoriteChip) favoriteChip.classList.remove('pulsing');
+      liveBadge.classList.remove('visible');
+      viewerBadge.classList.remove('visible');
+      resBadge.classList.remove('visible');
+    }, OVERLAY_MS);
+  }
+  async function resolveStartTime(stream){
+    const nickname = encodeURIComponent(streamNickname(stream));
+    // Используем актуальный API v4.5 endpoint
+    const candidates = [
+      `https://goodgame.ru/api/4/streams/2/username/${nickname}`,
+      `https://goodgame.ru/api/4/streams/2/channel/${nickname}`,
+      `https://goodgame.ru/api/4/users/${nickname}/stream`,
+      `https://goodgame.ru/api/4/stream/${nickname}`
+    ];
+    for (const url of candidates) {
+      try {
+        const data = await fetchJson(url);
+        const best = pickBestStartTime(collectCandidateTimes(data));
+        if (best) return best;
+      } catch (e) {}
+    }
+    return 0;
+  }
+  async function resolveStreamSources(stream){
+    const nickname = encodeURIComponent(streamNickname(stream));
+    // Официальные эндпоинты API v4: /streams/2/username/{username}, /streams/2/id/{id}, /streams/2/channel/{key}
+    // (/streams/2/ids ждёт числовые id — с ником возвращает пустой массив). /users/{nick}/stream и /stream/{nick} — резервные.
+    const chanId = Number(stream && (stream.id ?? stream.stream?.id));
+    const candidates = Number.isFinite(chanId) && chanId > 0
+      ? [
+          `https://goodgame.ru/api/4/streams/2/username/${nickname}`,
+          `https://goodgame.ru/api/4/streams/2/id/${chanId}`,
+          `https://goodgame.ru/api/4/streams/2/channel/${nickname}`,
+          `https://goodgame.ru/api/4/users/${nickname}/stream`,
+          `https://goodgame.ru/api/4/stream/${nickname}`
+        ]
+      : [
+          `https://goodgame.ru/api/4/streams/2/username/${nickname}`,
+          `https://goodgame.ru/api/4/streams/2/channel/${nickname}`,
+          `https://goodgame.ru/api/4/users/${nickname}/stream`,
+          `https://goodgame.ru/api/4/stream/${nickname}`
+        ];
+    let lastErr = null;
+    for (const url of candidates) {
+      try {
+        const data = await fetchJson(url);
+        // Поддержка разных структур ответа API v4.5
+        const sources = data?.streams?.[0]?.stream?.sources || 
+                       data?.streams?.[0]?.sources || 
+                       data?.stream?.sources || 
+                       data?.sources;
+        const list = streamSourceCandidates(sources);
+        if (list.length) return list;
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr || new Error('Не удалось получить HLS URL из GoodGame API');
+  }
+  async function openStream(index){
+    const stream = currentItems[index];
+    if (!stream) return;
+    await openStreamFromObject(stream);
+  }
+  async function backToBrowser(){
+    mode = 'browser'; currentStream = null; resetPlayerUI(); playbackAttemptToken += 1; stopVideo();
+    stopStallWatchdog(); hideRestoreBadge(); appHiddenFlag = false; wasPlayingBeforeHide = false; playbackStarted = false; resumePending = false;
+    player.classList.add('hidden'); browser.classList.remove('hidden');
+    renderedPage = -1;
+    startBackgroundRefresh(); // Restart BG fetch
+    if (returnToAllStreamsOnBack) {
+      returnToAllStreamsOnBack = false;
+      await loadAllStreamsView();
+      return;
+    }
+    renderGrid(true);
+  }
+  function openExit(){ exitOpen = true; exitDialog.style.display='flex'; clearTimeout(exitTimer); exitTimer = null; }
+  function closeExit(){ exitOpen = false; exitDialog.style.display='none'; clearTimeout(exitTimer); exitTimer = null; }
+  function openStreamExit(){
+    streamExitOpen = true;
+    if (streamExitDialog) streamExitDialog.style.display='flex';
+    clearTimeout(streamExitTimer);
+    streamExitTimer = setTimeout(() => { closeStreamExit(); }, 5000);
+  }
+  function closeStreamExit(){
+    streamExitOpen = false;
+    if (streamExitDialog) streamExitDialog.style.display='none';
+    clearTimeout(streamExitTimer);
+    streamExitTimer = null;
+  }
+  function reallyExit(){
+    try { if (window.webOS && webOS.platformBack) { webOS.platformBack(); return; } } catch(e){}
+    window.close();
+  }
+  function moveFocus(dx, dy){
+    const cols = GRID_COLS;
+    const totalItems = currentItems.length;
+    if (!totalItems) return;
+    if (uiZone === 'top') {
+      const prevTopFocusIndex = topFocusIndex;
+      if (dx > 0) topFocusIndex = Math.min(topControls.length - 1, topFocusIndex + 1);
+      else if (dx < 0) topFocusIndex = Math.max(0, topFocusIndex - 1);
+      else if (dy > 0) {
+        uiZone = 'grid';
+        updateTopFocus();
+        syncFocusedCard();
+        playFocusSound();
+        return;
+      }
+      updateTopFocus();
+      if (topFocusIndex !== prevTopFocusIndex) playFocusSound();
+      return;
+    }
+    const current = focusIndex;
+    const rowInPage = Math.floor((current % PAGE_SIZE) / cols);
+    const colInPage = current % cols;
+    let newRow = rowInPage, newCol = colInPage;
+    if (dx > 0) newCol = Math.min(cols - 1, colInPage + 1);
+    if (dx < 0) newCol = Math.max(0, colInPage - 1);
+    if (dy > 0) {
+      if (rowInPage < 2) newRow = rowInPage + 1;
+      else return;
+    } else if (dy < 0) {
+      if (rowInPage > 0) newRow = rowInPage - 1;
+      else {
+        uiZone = 'top';
+        topFocusIndex = 0;
+        syncFocusedCard();
+        playFocusSound();
+        return;
+      }
+    }
+    let newIndex = (getCurrentViewPage() - 1) * PAGE_SIZE + newRow * cols + newCol;
+    newIndex = Math.max(0, Math.min(totalItems - 1, newIndex));
+    if (newIndex !== focusIndex) {
+      focusIndex = newIndex;
+      syncFocusedCard();
+      playFocusSound();
+    }
+  }
+  function scheduleHoverFocus(idx){
+    if (!Number.isFinite(idx) || idx === focusIndex || idx === lastHoverIndex) return;
+    lastHoverIndex = idx;
+    pendingHoverIndex = idx;
+    clearTimeout(hoverRaf);
+    hoverRaf = setTimeout(() => {
+      hoverRaf = null;
+      if (pendingHoverIndex >= 0 && pendingHoverIndex !== focusIndex) { focusIndex = pendingHoverIndex; updateFocus(); playFocusSound(); }
+    }, 60);
+  }
+
+  tabs.forEach(tab => tab.addEventListener('click', async () => {
+    const t = tab.dataset.tab;
+    if (t === 'streams') await loadAllStreamsView({ keepTopFocus: true });
+    else if (t === 'games') await loadGamesView({ keepTopFocus: true });
+    else if (t === 'random') await openRandomStream();
+    else if (t === 'favorites') await loadFavoritesView({ keepTopFocus: true });
+  }));
+  grid.addEventListener('mouseover', (e) => {
+    if (mode !== 'browser') return;
+    const card = e.target.closest('.card');
+    if (!card || card.classList.contains('empty')) return;
+    const idx = Number(card.dataset.index);
+    uiZone = 'grid';
+    scheduleHoverFocus(idx);
+  });
+  grid.addEventListener('click', (e) => {
+    if (mode !== 'browser') return;
+    const card = e.target.closest('.card');
+    if (!card || card.classList.contains('empty')) return;
+    const idx = Number(card.dataset.index);
+    if (!Number.isFinite(idx)) return;
+    focusIndex = idx; updateFocus(); playFocusSound(); activateCurrent();
+  });
+
+
+  topControls.forEach((el, idx) => {
+    el.addEventListener('mouseover', () => {
+      const changed = uiZone !== 'top' || topFocusIndex !== idx;
+      uiZone = 'top'; topFocusIndex = idx; syncFocusedCard();
+      if (changed) playFocusSound();
+    });
+    el.addEventListener('click', async () => { uiZone = 'top'; topFocusIndex = idx; syncFocusedCard(); playFocusSound(); await activateTopControl(); });
+  });
+
+
+  if (exitDialog) {
+    exitDialog.addEventListener('mousedown', (e) => {
+      if (!exitOpen) return;
+      e.preventDefault();
+      closeExit();
+    });
+    exitDialog.addEventListener('click', (e) => {
+      if (!exitOpen) return;
+      e.preventDefault();
+      closeExit();
+    });
+  }
+
+  if (streamExitDialog) {
+    streamExitDialog.addEventListener('mousedown', (e) => {
+      if (!streamExitOpen) return;
+      e.preventDefault();
+      closeStreamExit();
+    });
+    streamExitDialog.addEventListener('click', (e) => {
+      if (!streamExitOpen) return;
+      e.preventDefault();
+      closeStreamExit();
+    });
+  }
+
+  if (favoriteChip) {
+    favoriteChip.addEventListener('mousedown', (e) => {
+      if (mode !== 'player' || !titleBadge.classList.contains('visible') || !currentStream) return;
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    favoriteChip.addEventListener('click', (e) => {
+      if (mode !== 'player' || !titleBadge.classList.contains('visible') || !currentStream) return;
+      e.preventDefault();
+      e.stopPropagation();
+      playClickSound();
+      toggleFavorite(currentStream);
+      showOverlay();
+    });
+  }
+
+  if (aboutOverlay) {
+    const logBtn = document.getElementById('logFromAbout');
+    if (logBtn) {
+      const openLog = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        playClickSound();
+        closeAboutOverlay();
+        openLogOverlay();
+      };
+      logBtn.addEventListener('mousedown', openLog);
+      logBtn.addEventListener('click', openLog);
+    }
+    aboutOverlay.addEventListener('mousedown', (e) => {
+      if (aboutOverlay.classList.contains('visible')) {
+        e.preventDefault();
+        closeAboutOverlay();
+      }
+    });
+    aboutOverlay.addEventListener('click', (e) => {
+      if (aboutOverlay.classList.contains('visible')) {
+        e.preventDefault();
+        closeAboutOverlay();
+      }
+    });
+  }
+  window.addEventListener('mousedown', () => {
+    if (aboutOverlay && aboutOverlay.classList.contains('visible')) closeAboutOverlay();
+  });
+  video.addEventListener('loadedmetadata', updateOverlayText);
+  video.addEventListener('resize', updateOverlayText);
+  window.addEventListener('resize', () => { applyAdaptiveGrid(); renderGrid(true); stackPlayerBadges(); });
+  window.addEventListener('orientationchange', () => { applyAdaptiveGrid(); renderGrid(true); stackPlayerBadges(); });
+  video.addEventListener('playing', () => {
+    try { console.log('GG: событие playing, t=' + (video.currentTime || 0).toFixed(2)); } catch (e) {}
+    updateOverlayText();
+  });
+  document.addEventListener('visibilitychange', () => {
+    try { console.log('GG: visibilitychange, hidden=' + document.hidden); } catch (e) {}
+    if (document.hidden) onAppHidden(); else onAppVisible();
+  });
+  window.addEventListener('focus', () => { if (appHiddenFlag) onAppVisible(); });
+  setInterval(() => {
+    if (liveBadge.classList.contains('visible')) updateOverlayText();
+    // Страховка только для ВОЗВРАТА из фона: опросом паузу больше не ставим —
+    // на части прошивок webOS document.hidden врёт, и это ломало старт воспроизведения (исправлено в 2.1.8)
+    if (mode === 'player' && appHiddenFlag && !document.hidden) onAppVisible();
+  }, 1000);
+
+  window.addEventListener('keydown', async (e) => {
+    const code = e.keyCode || e.which;
+    // Страховка: вернулись из другого приложения, а видео осталось на паузе — включаем свежий поток
+    if (mode === 'player' && appHiddenFlag && !document.hidden && !recoveryBusy && playbackStarted && video.paused) {
+      onAppVisible();
+    }
+    try { console.log('GG: keydown код=' + code); } catch (e) {}
+    if (aboutOverlay && aboutOverlay.classList.contains('visible') && (code === 37 || code === 38 || code === 39 || code === 40 || code === 13 || e.key === 'Enter')) {
+      e.preventDefault();
+      closeAboutOverlay();
+      return;
+    }
+    if (code === 461 || e.key === 'Backspace' || e.key === 'BrowserBack' || e.key === 'GoBack') {
+      e.preventDefault();
+      if (aboutOverlay && aboutOverlay.classList.contains('visible')) { closeAboutOverlay(); return; }
+      if (logOverlayIsOpen()) { closeLogOverlay(); return; }
+      if (mode === 'player') {
+        if (streamExitOpen) { closeStreamExit(); await backToBrowser(); return; }
+        if (titleBadge.classList.contains('visible')) {
+          e.preventDefault();
+          clearTimeout(overlayTimer);
+          titleBadge.classList.remove('visible');
+          if (favoriteChip) favoriteChip.classList.remove('pulsing');
+          liveBadge.classList.remove('visible');
+          viewerBadge.classList.remove('visible');
+          resBadge.classList.remove('visible');
+        } else {
+          openStreamExit();
+        }
+        return;
+      }
+      if (browserView === 'game_streams') { await loadGamesView(); return; }
+      if (browserView === 'games') { await loadAllStreamsView(); return; }
+      if (browserView === 'favorites') { await loadAllStreamsView(); return; }
+      if (exitOpen) reallyExit(); else openExit();
+      return;
+    }
+    if (exitOpen) {
+      if (code === 13 || e.key === 'Enter') { e.preventDefault(); return; }
+      closeExit();
+      return;
+    }
+    if (streamExitOpen) {
+      e.preventDefault();
+      closeStreamExit();
+      return;
+    }
+    if (code === 48 || e.key === '0') {
+      e.preventDefault();
+      if (logOverlayIsOpen()) closeLogOverlay(); else openLogOverlay();
+      return;
+    }
+    if (mode === 'browser') {
+      if (code === 37) { e.preventDefault(); moveFocus(-1, 0); return; }
+      if (code === 39) { e.preventDefault(); moveFocus(1, 0); return; }
+      if (code === 38) { e.preventDefault(); moveFocus(0, -1); return; }
+      if (code === 40) { e.preventDefault(); moveFocus(0, 1); return; }
+      if (code === 13 || e.key === 'Enter') { e.preventDefault(); if (uiZone === 'top') { await activateTopControl(); } else { await activateCurrent(); } return; }
+      if (code === 49) { e.preventDefault(); await loadAllStreamsView({ keepTopFocus: true }); return; }
+      if (code === 50) { e.preventDefault(); await loadGamesView({ keepTopFocus: true }); return; }
+      if (code === 51) { e.preventDefault(); await openRandomStream(); return; }
+      if (code === 52) { e.preventDefault(); showAboutOverlay(); return; }
+      if (code === 53) { e.preventDefault(); await loadFavoritesView({ keepTopFocus: true }); return; }
+      return;
+    }
+    if (mode === 'player') {
+      if (code === 37 || code === 38 || code === 39 || code === 40) { e.preventDefault(); showOverlay(); return; }
+      if (code === 13 || e.key === 'Enter') { e.preventDefault(); if (titleBadge.classList.contains('visible')) { playClickSound(); toggleFavorite(currentStream); } showOverlay(); return; }
+    }
+  });
+
+  applyAdaptiveGrid();
+  startBackgroundRefresh();
+
+  setTimeout(async () => {
+    hideSplash();
+    browser.classList.remove('hidden');
+    try { await loadAllStreamsView(); }
+    catch(e) { showMessage('Ошибка', 'Не удалось загрузить список стримов GoodGame.', 5000); }
+  }, SPLASH_MS);
+})();
+
+</script>
+</body>
+</html>
