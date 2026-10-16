@@ -418,7 +418,7 @@
   const API_MAX_PAGES = 10;
   const STALL_CHECK_INTERVAL_MS = 3000;
   const STALL_THRESHOLD = 3;
-  const MAX_AUTO_RECOVERY = 4;
+  const MAX_AUTO_RECOVERY = 5;
   const OVERLAY_MS = 7000;
   const ABOUT_GLOW_MS = 5000;
   let aboutGlowTimer = null;
@@ -1085,25 +1085,27 @@
       return withGoodGameToken(trimmed, baseUrl);
     }).filter((line) => line !== '').join('\n');
   }
-  function createGoodGameHlsLoader(){
+  function createGoodGameHlsLoader(sourceUrl){
     const BaseLoader = window.Hls && window.Hls.DefaultConfig && window.Hls.DefaultConfig.loader;
     if (!BaseLoader) return null;
-    // Анти-кэш: webOS-браузер может отдавать m3u8 из своего HTTP-кэша (в т.ч. ошибочные ответы),
-    // из-за чего при повторном входе в стрим падал manifestLoadError. Сегменты НЕ трогаем (подписанные URL).
+    // Проставляем подпись дочерним URL непосредственно перед сетевым запросом.
     let cbCounter = 0;
     return class GoodGameHlsLoader extends BaseLoader {
       load(context, config, callbacks){
         try {
-          const u = context && context.url;
-          if (typeof u === 'string' && /\.m3u8(\?|$)/i.test(u) && !/[?&]_cb=/.test(u)) {
-            context = Object.assign({}, context, { url: u + (u.indexOf('?') >= 0 ? '&' : '?') + '_cb=' + Date.now().toString(36) + (++cbCounter).toString(36) });
+          let url = withGoodGameToken(context.url, sourceUrl);
+          if (/\.m3u8(\?|$)/i.test(url)) {
+            const u = new URL(url, location.href);
+            u.searchParams.set('_cb', Date.now().toString(36) + (++cbCounter).toString(36));
+            url = u.href;
           }
-        } catch (e) {}
+          context.url = url;
+        } catch (e) { logCritical('Ошибка подготовки URL HLS: ' + (e.message || e)); }
         const originalOnSuccess = callbacks && callbacks.onSuccess;
         const wrappedCallbacks = Object.assign({}, callbacks, {
           onSuccess: (response, stats, ctx, networkDetails) => {
             try {
-              const requestUrl = (ctx && ctx.url) || (context && context.url) || '';
+              const requestUrl = (context && context.url) || (ctx && ctx.url) || '';
               if (response && typeof response.data === 'string' && response.data.indexOf('#EXTM3U') >= 0) {
                 response = Object.assign({}, response, { data: rewriteHlsPlaylist(response.data, requestUrl) });
               }
@@ -1257,14 +1259,15 @@
         } catch (e) {
           if (mode !== 'player' || currentStream !== streamAtStart) break;
           try { console.log('GG: попытка восстановления не удалась:', e && e.message); } catch (e2) {}
-          showRestoreBadge(`Не удалось, повтор через 4 с (${recoveryAttempts}/${MAX_AUTO_RECOVERY})…`);
-          await delay(4000);
+          const backoffMs = [5000, 15000, 30000, 60000, 120000][Math.min(recoveryAttempts - 1, 4)];
+          showRestoreBadge(`Пауза ${Math.round(backoffMs / 1000)} с, затем перепросим сервер (${recoveryAttempts}/${MAX_AUTO_RECOVERY})…`);
+          await delay(backoffMs);
         }
       }
       stopStallWatchdog();
       hideRestoreBadge();
       recoveryBusy = false;
-      if (mode === 'player' && currentStream === streamAtStart) showError('Не удалось восстановить воспроизведение.\n' + reason);
+      if (mode === 'player' && currentStream === streamAtStart) showError('Не удалось восстановить воспроизведение.\n' + reason + '\nОбычно это временно: подождите минуту-другую и откройте стрим заново.');
       if (resumePending && !appHiddenFlag && mode === 'player' && currentStream === streamAtStart) {
         resumePending = false;
         recoveryAttempts = 0;
@@ -1318,7 +1321,12 @@
   function attemptStreamPlayback(candidate, token, isFirstCandidate, forceNative){
     const src = cacheBustManifest(candidate && candidate.url ? candidate.url : candidate);
     const label = candidate && candidate.label ? candidate.label : 'stream';
-    try { console.log('GG: пробуем источник', label, String(src).slice(0, 100)); } catch (e) {}
+    try {
+      const signedUrl = new URL(src, location.href);
+      const expires = Number(signedUrl.searchParams.get('expires'));
+      if (expires > 0 && expires * 1000 < Date.now() + 15000) logCritical('Подпись HLS истекла или истечёт <15 с: ' + signedUrl.pathname);
+      console.log('GG: пробуем источник', label, signedUrl.pathname);
+    } catch (e) {}
     return new Promise((resolve, reject) => {
       if (!src) { reject(new Error('Пустой HLS URL')); return; }
       let done = false;
@@ -1362,7 +1370,7 @@
       try {
         destroyHlsPlayer();
         if (window.Hls && window.Hls.isSupported && window.Hls.isSupported() && !forceNative) {
-          const Loader = createGoodGameHlsLoader();
+          const Loader = createGoodGameHlsLoader(src);
           const config = {
             lowLatencyMode: false,
             backBufferLength: 12,
@@ -1396,7 +1404,22 @@
             const status = data.response && data.response.code;
             const detail = (data.details || data.type || 'unknown') + (status ? ' HTTP ' + status : '');
             try { console.log('GG: hls фатальная ошибка:', detail, data.reason || ''); } catch (e) {}
-            logCritical('HLS: ' + detail);
+            let requestInfo = '';
+            try {
+              const failed = data.context && data.context.url;
+              if (failed) {
+                const u = new URL(failed, location.href);
+                requestInfo = ' ' + u.pathname + ' signed=' + (u.searchParams.has('token') && u.searchParams.has('expires') ? 'yes' : 'no');
+              }
+            } catch (e) {}
+            logCritical('HLS: ' + detail + requestInfo);
+            if (status === 403) {
+              const err403 = new Error('HLS ' + detail);
+              err403.tokenRejected = true;
+              if (done) { if (mode === 'player' && !recoveryBusy) recoverStream('HLS ' + detail); }
+              else fail(err403);
+              return;
+            }
             if (done) {
               if (mode === 'player' && !recoveryBusy) recoverStream('HLS ' + detail);
               return;
@@ -1426,7 +1449,8 @@
             const levels = hlsPlayer.levels;
             if (levels && levels.length > 0) {
               const maxLevel = levels.length - 1;
-              hlsPlayer.currentLevel = maxLevel;
+              hlsPlayer.currentLevel = maxLevel; // фиксировано: ABR не понижает качество
+              try { console.log('GG: выбран максимальный уровень ' + maxLevel + ' из ' + (levels.length - 1)); } catch (e) {}
             }
             const p = video.play();
             if (p && typeof p.catch === 'function') p.catch(()=>{});
@@ -1461,15 +1485,22 @@
         return await attemptStreamPlayback(candidate, token, i === 0);
       } catch (e) {
         lastErr = e;
+        if (e && e.tokenRejected) break; // один токен на все источники — перебор бессмыслен
       }
     }
+    if (lastErr && lastErr.tokenRejected) {
+      logCritical('Ссылки отклонены (403) — перепросим API после паузы');
+      throw lastErr;
+    }
     // Аварийный путь: если hls.js не смог ни один источник — пробуем нативный плеер webOS (ТВ умеет HLS сам)
-    if (list[0] && video.canPlayType && video.canPlayType('application/vnd.apple.mpegurl')) {
+    const directQuality = list.find(c => /^\d+$/.test(c.label));
+    if (directQuality && video.canPlayType && video.canPlayType('application/vnd.apple.mpegurl')) {
       try { console.log('GG: пробуем нативный HLS-плеер webOS'); } catch (e) {}
       logCritical('hls.js не справился — пробуем нативный плеер webOS');
       stopVideo();
       try {
-        return await attemptStreamPlayback({ label: 'native', url: list[0].url }, token, false, true);
+        // Нативный webOS не умеет добавлять подпись к вложенным ссылкам мастер-плейлиста.
+        return await attemptStreamPlayback({ label: 'native ' + directQuality.label, url: directQuality.url }, token, false, true);
       } catch (e) {
         lastErr = e;
       }
