@@ -365,7 +365,7 @@
 <script src="hls.min.js"></script>
 <script>
 (function(){
-  const APP_VERSION = '2.2.3';
+  const APP_VERSION = '2.2.5';
   try { console.log('GG: app v' + APP_VERSION, 'visState=' + document.visibilityState, 'hidden=' + document.hidden); } catch (e) {}
 
   // === Журнал критических событий (кольцевой буфер, хранится на ТВ) ===
@@ -434,6 +434,10 @@
   let wasPlayingBeforeHide = false;
   let resumePending = false;
   let playbackStarted = false;
+  let exitRefreshTimer = null;
+  function cancelExitRefresh(){
+    if (exitRefreshTimer) { clearTimeout(exitRefreshTimer); exitRefreshTimer = null; }
+  }
   const GRID_COLS = 4;
   const GRID_ROWS = 3;
   const TILE_ASPECT = 16 / 9;
@@ -1132,6 +1136,9 @@
 
   // === Watchdog: следим, чтобы видео реально продвигалось ===
   function delay(ms){ return new Promise((resolve) => setTimeout(resolve, ms)); }
+  function recoveryBackoffMs(attempts){
+    return [5000, 15000, 30000, 60000, 120000][Math.min(attempts - 1, 4)];
+  }
   function startStallWatchdog(){
     stopStallWatchdog();
     lastPlaybackTime = video.currentTime || 0;
@@ -1223,23 +1230,32 @@
         if (mode !== 'player' || currentStream !== streamAtStart) break;
         recoveryAttempts += 1;
         showRestoreBadge(`Проверяем трансляцию на сервере (${recoveryAttempts}/${MAX_AUTO_RECOVERY})…`);
-        let freshSources = null;
-        try { freshSources = await resolveStreamSources(streamAtStart); } catch (e) { freshSources = null; }
+        // Различаем: стрим закончился / перезапускается / обрыв связи / неизвестно
+        const backoffMs = recoveryBackoffMs(recoveryAttempts);
+        let info = null;
+        try { info = await fetchChannelInfo(encodeURIComponent(streamNickname(streamAtStart))); } catch (e) { info = null; }
         if (mode !== 'player' || currentStream !== streamAtStart) break;
-        if (!freshSources || !freshSources.length) {
-          // Отсеиваем кратковременный сбой API: перепроверяем через 3 секунды
-          await delay(3000);
-          if (mode !== 'player' || currentStream !== streamAtStart) break;
-          try { freshSources = await resolveStreamSources(streamAtStart); } catch (e) { freshSources = null; }
-          if (mode !== 'player' || currentStream !== streamAtStart) break;
-        }
-        if (!freshSources || !freshSources.length) {
-          // Сервер больше не отдаёт источники — трансляция прекратилась
+        const state = channelState(info);
+        try { console.log('GG: статус трансляции:', state); } catch (e) {}
+        logCritical('Статус трансляции: ' + state);
+        if (state === 'ended') {
           stopStallWatchdog();
           hideRestoreBadge();
           recoveryBusy = false;
-          showError('Трансляция завершена или недоступна на сервере.');
+          showError('Трансляция завершена.');
           return;
+        }
+        if (state === 'starting') {
+          showRestoreBadge(`Трансляция перезапускается, ждём ${Math.round(backoffMs / 1000)} с (${recoveryAttempts}/${MAX_AUTO_RECOVERY})…`);
+          await delay(backoffMs);
+          continue;
+        }
+        let freshSources = (state === 'live' && info && info.sources) ? streamSourceCandidates(info.sources) : null;
+        if (!freshSources || !freshSources.length) {
+          // live без sources или неизвестное состояние (API/сеть недоступны) — считаем обрывом
+          showRestoreBadge(`Нет ответа сервера, повторяем через ${Math.round(backoffMs / 1000)} с (${recoveryAttempts}/${MAX_AUTO_RECOVERY})…`);
+          await delay(backoffMs);
+          continue;
         }
         try { console.log('GG: recover, API отдал источников:', freshSources ? freshSources.length : 0); } catch (e) {}
         showRestoreBadge(`Подключаемся к свежему потоку (${recoveryAttempts}/${MAX_AUTO_RECOVERY})…`);
@@ -1259,7 +1275,7 @@
         } catch (e) {
           if (mode !== 'player' || currentStream !== streamAtStart) break;
           try { console.log('GG: попытка восстановления не удалась:', e && e.message); } catch (e2) {}
-          const backoffMs = [5000, 15000, 30000, 60000, 120000][Math.min(recoveryAttempts - 1, 4)];
+          const backoffMs = recoveryBackoffMs(recoveryAttempts);
           showRestoreBadge(`Пауза ${Math.round(backoffMs / 1000)} с, затем перепросим сервер (${recoveryAttempts}/${MAX_AUTO_RECOVERY})…`);
           await delay(backoffMs);
         }
@@ -2229,6 +2245,8 @@
   }
   async function openStreamFromObject(stream){
     if (!stream) return;
+    cancelExitRefresh();
+    clearMessage();
     currentStream = stream;
     playbackStarted = false;
     resumePending = false;
@@ -2382,6 +2400,44 @@
     }
     return 0;
   }
+  async function fetchChannelInfo(nickname){
+    const candidates = [
+      `https://goodgame.ru/api/4/streams/2/username/${nickname}`,
+      `https://goodgame.ru/api/4/streams/2/channel/${nickname}`,
+      `https://goodgame.ru/api/4/users/${nickname}/stream`,
+      `https://goodgame.ru/api/4/stream/${nickname}`
+    ];
+    let lastErr = null;
+    for (const url of candidates) {
+      try {
+        const data = await fetchJson(url);
+        const sources = data?.streams?.[0]?.stream?.sources ||
+                        data?.streams?.[0]?.sources ||
+                        data?.stream?.sources ||
+                        data?.sources || null;
+        return { data, sources };
+      } catch (e) { lastErr = e; }
+    }
+    throw lastErr || new Error('API недоступен');
+  }
+  function channelOnlineFlag(node){
+    if (!node || typeof node !== 'object') return undefined;
+    if (node.online !== undefined) return node.online;
+    if (typeof node.status === 'boolean') return node.status;
+    if (node.stream) return channelOnlineFlag(node.stream);
+    if (node.streams && node.streams[0]) return channelOnlineFlag(node.streams[0]);
+    return undefined;
+  }
+  function channelState(infoData){
+    if (!infoData || !infoData.data) return 'unknown';
+    const root = infoData.data;
+    const starting = !!(root.starting || root.stream?.starting || root.streams?.[0]?.starting);
+    const online = channelOnlineFlag(root);
+    if (online === true) return 'live';
+    if (starting) return 'starting';
+    if (online === false) return 'ended';
+    return (infoData.sources && Object.keys(infoData.sources).length) ? 'live' : 'unknown';
+  }
   async function resolveStreamSources(stream){
     const nickname = encodeURIComponent(streamNickname(stream));
     // Официальные эндпоинты API v4: /streams/2/username/{username}, /streams/2/id/{id}, /streams/2/channel/{key}
@@ -2427,11 +2483,27 @@
     player.classList.add('hidden'); browser.classList.remove('hidden');
     renderedPage = -1;
     startBackgroundRefresh(); // Restart BG fetch
+    // Полное обновление списка — с задержкой: если пользователь сразу вернулся в стрим,
+    // пачка запросов не должна сталкиваться с запросами открытия потока (иначе API режет их)
+    cancelExitRefresh();
+    exitRefreshTimer = setTimeout(async () => {
+      exitRefreshTimer = null;
+      if (mode !== 'browser') return; // пользователь уже открыл новый стрим
+      showMessage('Обновление', 'Обновляем список стримов…', 0);
+      let refreshed = true;
+      try { await refreshStreams({ force: true }); } catch (e) { refreshed = false; }
+      if (mode !== 'browser') return;
+      clearMessage();
+      if (!refreshed) showMessage('Обновление', 'Не удалось обновить список — показаны сохранённые данные.', 3500);
+      await maybeRefreshVisibleView(false);
+      renderGrid(true);
+    }, 2000);
     if (returnToAllStreamsOnBack) {
       returnToAllStreamsOnBack = false;
       await loadAllStreamsView();
       return;
     }
+    await maybeRefreshVisibleView(false);
     renderGrid(true);
   }
   function openExit(){ exitOpen = true; exitDialog.style.display='flex'; clearTimeout(exitTimer); exitTimer = null; }

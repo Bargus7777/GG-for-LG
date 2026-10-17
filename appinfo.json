@@ -1,6 +1,6 @@
 {
   "id": "com.alex.ggforlg",
-  "version": "2.2.3",
+  "version": "2.2.5",
   "vendor": "OpenAI",
   "type": "web",
   "main": "index.html",
